@@ -4,9 +4,9 @@ A pilot smart-building system for the College of Computing and Information Scien
 
 ## Background
 
-CoCIS needs better control over access to institutional facilities and equipment, as well as ways to reduce electricity use when rooms are unoccupied. This project proposes an integrated system for the main entrance and two lecture rooms. It is intended as a pilot that can be evaluated before any wider deployment.
+CoCIS needs better control over access to institutional facilities and equipment, as well as ways to reduce electricity use when rooms are unoccupied. This project proposes an integrated system for the main entrance and two lecture rooms.
 
-## Pilot Scope
+## Scope
 
 - **Main entrance:** Separate entry and exit points. Users scan an RFID tag at the appropriate point; the system validates the tag, controls the associated door mechanism, and records the event.
 - **Lecture Room 1 and Lecture Room 2:** Occupancy detection controls each room's lights, switching them off when the room is unoccupied.
