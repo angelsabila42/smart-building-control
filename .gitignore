@@ -1,0 +1,7 @@
+# PlatformIO build output
+.pio/
+**/.pio/
+
+# Local secrets
+.env
+.env.*
