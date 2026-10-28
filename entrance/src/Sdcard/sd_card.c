@@ -158,7 +158,6 @@ esp_err_t log_event(const char *event, const char *details)
     xSemaphoreGive(sd_mutex);
     return result;
 }
-
 bool sd_card_is_mounted(void)
 {
     return sd_mounted;
