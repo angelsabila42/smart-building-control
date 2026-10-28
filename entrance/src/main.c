@@ -1,1 +1,8 @@
-void app_main() {}
+#include <stdio.h>
+
+void rfid(void);
+
+void app_main() {
+    
+    rfid();
+}

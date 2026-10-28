@@ -1,0 +1,17 @@
+dependencies:
+  idf:
+    source:
+      type: idf
+    version: 6.0.1
+  rc522:
+    dependencies: []
+    source:
+      path: D:\ESP32\smart-building-control\entrance\components\rc522
+      type: local
+    version: 3.4.3
+direct_dependencies:
+- abobija/rc522
+- idf
+manifest_hash: 7388e80297604f954792532e1d6e09ae46c6e26b2dfeba510c425d3dfe1efa10
+target: esp32s3
+version: 2.0.0
