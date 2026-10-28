@@ -27,7 +27,6 @@ static SemaphoreHandle_t sd_mutex = NULL;
 
 esp_err_t sd_card_init(void)
 {
-    /* Create the mutex once. */
     if (sd_mutex == NULL) {
         sd_mutex = xSemaphoreCreateMutex();
 
@@ -39,8 +38,7 @@ esp_err_t sd_card_init(void)
 
     xSemaphoreTake(sd_mutex, portMAX_DELAY);
 
-    /* Avoid initializing the card again if already mounted. */
-    if (sd_mounted) {
+    if (sd_mounted) {             //Avoid initializing the card again if already mounted
         xSemaphoreGive(sd_mutex);
         ESP_LOGI(TAG, "SD card is already mounted");
         return ESP_OK;
@@ -62,18 +60,12 @@ esp_err_t sd_card_init(void)
     );
 
     if (ret != ESP_OK) {
-        /*
-         * INVALID_STATE can mean the SPI bus is already initialized.
-         * In that case, continue to the mounting step.
-         */
         if (ret != ESP_ERR_INVALID_STATE) {
             ESP_LOGE(TAG, "SPI initialization failed: %s",
                      esp_err_to_name(ret));
-
             xSemaphoreGive(sd_mutex);
             return ret;
         }
-
         ESP_LOGW(TAG, "SPI bus already initialized");
     }
 
@@ -99,9 +91,7 @@ esp_err_t sd_card_init(void)
     );
 
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "SD-card mount failed: %s",
-                 esp_err_to_name(ret));
-
+        ESP_LOGE(TAG, "SD-card mount failed: %s", esp_err_to_name(ret));
         xSemaphoreGive(sd_mutex);
         return ret;
     }
@@ -110,15 +100,12 @@ esp_err_t sd_card_init(void)
 
     ESP_LOGI(TAG, "SD card mounted successfully");
     sdmmc_card_print_info(stdout, sd_card);
-
     xSemaphoreGive(sd_mutex);
-
     return ESP_OK;
 }
 
 esp_err_t log_event(const char *event, const char *details)
 {
-    /* Check the arguments first. */
     if (event == NULL || details == NULL) {
         ESP_LOGE(TAG, "Event or details cannot be NULL");
         return ESP_ERR_INVALID_ARG;
@@ -129,7 +116,6 @@ esp_err_t log_event(const char *event, const char *details)
         return ESP_ERR_INVALID_STATE;
     }
 
-    /* Wait up to 5 seconds for access to the SD card. */
     if (xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(5000)) != pdTRUE) {
         ESP_LOGE(TAG, "Timed out waiting to write log");
         return ESP_ERR_TIMEOUT;
@@ -137,7 +123,6 @@ esp_err_t log_event(const char *event, const char *details)
 
     if (!sd_mounted) {
         ESP_LOGW(TAG, "SD card is not mounted");
-
         xSemaphoreGive(sd_mutex);
         return ESP_FAIL;
     }
@@ -146,12 +131,10 @@ esp_err_t log_event(const char *event, const char *details)
 
     if (file == NULL) {
         ESP_LOGE(TAG, "Could not open log file");
-
         xSemaphoreGive(sd_mutex);
         return ESP_FAIL;
     }
 
-    /* Write the event and check for errors. */
     esp_err_t result = ESP_OK;
 
     if (fprintf(file, "%s,%s\n", event, details) < 0) {
@@ -159,13 +142,11 @@ esp_err_t log_event(const char *event, const char *details)
         result = ESP_FAIL;
     }
 
-    /* Flush buffered data and check for errors. */
     if (fflush(file) != 0) {
         ESP_LOGE(TAG, "Failed to flush log entry");
         result = ESP_FAIL;
     }
 
-    /* Always close the file and check for errors. */
     if (fclose(file) != 0) {
         ESP_LOGE(TAG, "Failed to close log file");
         result = ESP_FAIL;
@@ -174,9 +155,7 @@ esp_err_t log_event(const char *event, const char *details)
     if (result == ESP_OK) {
         ESP_LOGI(TAG, "Event logged: %s", event);
     }
-
     xSemaphoreGive(sd_mutex);
-
     return result;
 }
 
