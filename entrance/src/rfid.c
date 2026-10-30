@@ -1,5 +1,7 @@
 #include "driver/spi_master.h"
 
+#include <stdbool.h>
+
 #include "driver/gpio.h"
 
 #include "rc522.h"
@@ -9,6 +11,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+
+#include "management/management_app.h"
 
 /*
 rc522 start()
@@ -96,8 +100,16 @@ static void card_event_handler(void *arg, esp_event_base_t event_t, int32_t id, 
             ESP_LOGE(RFID, "Failed to convert card UID: %s", esp_err_to_name(err));
             return;
         }
-        ESP_LOGE(RFID, "Card UID: %s", uid_str);
 
+        /*
+         * Management interface integration: apply the configured access
+         * schedule and record the decision.  The current entrance has a single
+         * reader, so presentations are treated as entry attempts.  When the
+         * exit reader is added, call management_access_check(uid, 'O') there.
+         */
+        const bool granted = management_access_check(uid_str, 'I');
+
+        ESP_LOGI(RFID, "Card UID: %s - access %s", uid_str, granted ? "GRANTED" : "DENIED");
     }
 
 }
