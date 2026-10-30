@@ -5,3 +5,6 @@
 # Local secrets
 .env
 .env.*
+
+# Host test binaries for the management interface
+tools/management-tests/build/
