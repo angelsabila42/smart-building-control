@@ -1,157 +1,202 @@
-#include "driver/spi_master.h"
+#include <stdint.h>
+#include <inttypes.h>
 
 #include <stdbool.h>
 
 #include "driver/gpio.h"
+#include "driver/spi_master.h"
+
+#include "esp_log.h"
+#include "esp_err.h"
 
 #include "rc522.h"
-#include "driver/rc522_spi.h"
-#include "rc522_picc.h"
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-
+#include "Rgb/rgb.h"
+#include "Serv/serv.h"
+#include "Sdcard/sd_card.h"
+#include "Accesscontrol/access_control.h"
 #include "management/management_app.h"
 
-/*
-rc522 start()
-Checks the handle: makes sure the reader pointer is valid.
-Checks the state: confirms the reader is allowed to start.
-Handles resuming: if the reader was paused, it resumes polling without reinitializing the chip.
-Initializes the hardware: resets the chip, tests read/write communication, and initializes the proximity-coupling device (PCD).
-Enables polling: sets the reader state to RC522_STATE_POLLING, allowing the polling task you examined earlier to detect cards.
+//SPI communication pins
+#define RFID_MISO GPIO_NUM_37
+#define RFID_MOSI GPIO_NUM_35
+#define RFID_SCK  GPIO_NUM_36
 
-PICC stands for Proximity Integrated Circuit Card. It refers to the RFID card or tag that you present to the RC522 reader.
-*/
+//Chip Select pins
+#define RFID_CS_ENTRY GPIO_NUM_10
+#define RFID_CS_EXIT GPIO_NUM_4
 
-#define RST_PIN GPIO_NUM_9   
-#define SS_PIN GPIO_NUM_10  
-#define SCK_PIN GPIO_NUM_36  
-#define MOSI_PIN GPIO_NUM_35  
-#define MISO_PIN GPIO_NUM_37
+static const char *TAG = "RFID";
 
-static const char *RFID = "RFID";
+static rc522_handle_t entry_scanner = NULL;
+static rc522_handle_t exit_scanner = NULL;
 
-rc522_driver_handle_t driver = NULL;
-rc522_handle_t reader = NULL;
+typedef enum {
+    RFID_ENTRY,
+    RFID_EXIT
+}rfid_reader_id_t;
 
-spi_bus_config_t bus_config = {0};
-rc522_config_t reader_config ={0};
 
-void configure_bus(){
+static rfid_reader_id_t exit_id = RFID_EXIT;
+static rfid_reader_id_t entry_id = RFID_ENTRY;
 
-    bus_config.sclk_io_num = SCK_PIN;
-    bus_config.mosi_io_num =  MOSI_PIN;
-    bus_config.miso_io_num =  MISO_PIN;
-    bus_config.quadwp_io_num = -1;
-    bus_config.quadhd_io_num = -1;
 
+//Manually configuring the bus
+static esp_err_t initialize_spi_bus(void)
+{
+    spi_bus_config_t config = {
+    .miso_io_num = 37,
+    .mosi_io_num = 35,
+    .sclk_io_num = 36,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+    .max_transfer_sz = 4000,
+    };
+
+    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &config, SPI_DMA_CH_AUTO);
+    if(ret != ESP_OK){
+        ESP_LOGE(TAG, "Failed to initialize SPI bus: %s", esp_err_to_name(ret));
+        return ret;
+    }
+    return ESP_OK;
 }
 
-void configure_driver(){
+static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, void *event_data){
 
-    rc522_spi_config_t spi_config = {0};
-    spi_config.bus_config = &bus_config;
-    spi_config.host_id = SPI2_HOST;
-    spi_config.rst_io_num = RST_PIN;
-    //Configure the chip-select pin
-    spi_config.dev_config.spics_io_num = SS_PIN;
-    //SPI communication settings
-    spi_config.dev_config.clock_speed_hz = 1000000;
-    spi_config.dev_config.mode = 0; //RC522 commonly communicates using SPI mode 0'
-    spi_config.dev_config.queue_size = 1;
-    spi_config.dma_chan = SPI_DMA_CH_AUTO;
-
-    esp_err_t err = rc522_spi_create(&spi_config, &driver);
-    if(err != ESP_OK){
-        ESP_LOGE(RFID, "Failed to create SPI driver %s", esp_err_to_name(err));
-        return;
-    }
-
-    err = rc522_driver_install(driver);
-    if(err != ESP_OK){
-        ESP_LOGE(RFID, "Failed to install SPI driver %s", esp_err_to_name(err));
-        return;
-    }
-
-}
-
-static void card_event_handler(void *arg, esp_event_base_t event_t, int32_t id, void *event_data){
+    rfid_reader_id_t reader_id = *(rfid_reader_id_t *)arg;
     //Does not create an event structure or guarantee that the pointer is valid.
-    rc522_picc_state_changed_event_t *event = (rc522_picc_state_changed_event_t *)event_data;
+    rc522_event_data_t *data = (rc522_event_data_t *)event_data;
     
-    if(event == NULL || event->picc == NULL){
-        return;
-    }
+    if(event_id == RC522_EVENT_TAG_SCANNED && data != NULL){
+        rc522_tag_t *tag = (rc522_tag_t*)data->ptr;
 
-    if(event->picc->state == RC522_PICC_STATE_ACTIVE || event->picc->state == RC522_PICC_STATE_ACTIVE_H){
-        //This creates a character array to hold the converted UID. The UID is stored as bytes in event->picc->uid, 
-        //but we want to display it as readable hexadecimal text, such as A1:B2:C3:D4.
+        if(tag != NULL){
+            ESP_LOGI(TAG, "Card scanned! Serial number: %" PRIu64, tag->serial_number);
 
-        char uid_str[RC522_PICC_UID_STR_BUFFER_SIZE_MAX];
-        esp_err_t err = rc522_picc_uid_to_str(
-            &event->picc->uid,
-            uid_str,
-            sizeof(uid_str)
-        );
+            char uid_str[21];
+            snprintf(uid_str, sizeof(uid_str), "%" PRIu64, tag->serial_number);
 
-        if(err != ESP_OK){
-            ESP_LOGE(RFID, "Failed to convert card UID: %s", esp_err_to_name(err));
-            return;
+            /*
+             * Two independent checks apply to an entry:
+             *   1. the door allowlist in Accesscontrol/;
+             *   2. the management access schedule (never applied to egress).
+             * management_access_check_authorized() records one event with the
+             * combined decision so the serial log and the SD audit trail agree.
+             */
+            const char direction = (reader_id == RFID_EXIT) ? 'O' : 'I';
+            const bool authorized =
+                (access_control_check(tag->serial_number) == ACCESS_GRANTED);
+            const bool granted =
+                management_access_check_authorized(uid_str, direction, authorized);
+
+            switch (reader_id)
+            {
+            case RFID_ENTRY:
+                if (granted){
+                    ESP_LOGI(TAG, "Entry access granted for %s", uid_str);
+                    log_event("ENTRY_GRANTED", uid_str);
+                    occupancy_update(tag->serial_number, true);
+
+                    rgb_entry_granted();
+                    entry_open();
+                }else{
+                    ESP_LOGI(TAG, "Entry access denied for %s", uid_str);
+                    log_event("ENTRY_DENIED", uid_str);
+                    rgb_entry_denied();
+                    entry_close();
+                }
+                break;
+
+            case RFID_EXIT:
+                if (granted){
+                    ESP_LOGI(TAG, "Exit access granted for %s", uid_str);
+                    log_event("EXIT_GRANTED", uid_str);
+                    occupancy_update(tag->serial_number, false);
+
+                    rgb_exit_granted();
+                    exit_open();
+                }else{
+                    ESP_LOGI(TAG, "Exit access denied for %s", uid_str);
+                    log_event("EXIT_DENIED", uid_str);
+
+                    rgb_exit_denied();
+                    exit_close();
+                }
+                break;
+
+            default:
+                ESP_LOGE(TAG, "Unknown RFID reader identifier");
+                break;
+            }
         }
-
-        /*
-         * Management interface integration: apply the configured access
-         * schedule and record the decision.  The current entrance has a single
-         * reader, so presentations are treated as entry attempts.  When the
-         * exit reader is added, call management_access_check(uid, 'O') there.
-         */
-        const bool granted = management_access_check(uid_str, 'I');
-
-        ESP_LOGI(RFID, "Card UID: %s - access %s", uid_str, granted ? "GRANTED" : "DENIED");
     }
 
 }
 
-void configure_reader(){
-    
-    reader_config.driver = driver;
-    reader_config.poll_interval_ms = 1000;
-    reader_config.task_stack_size = 4096;
-    reader_config.task_priority = 5;
+static esp_err_t configure_reader(gpio_num_t cs_pin, rc522_handle_t *scanner, rfid_reader_id_t *reader_id){
+    rc522_config_t config = {
+        .scan_interval_ms = 50,
+        .spi.host = SPI2_HOST,
+        .spi.miso_gpio = RFID_MISO,
+        .spi.mosi_gpio = RFID_MOSI,
+        .spi.sck_gpio = RFID_SCK,
+        .spi.sda_gpio = cs_pin,
+        .spi.clock_speed_hz = 1000000,
+        .spi.bus_is_initialized = true,
+    };
 
-    esp_err_t err = rc522_create(&reader_config, &reader);
+    esp_err_t err = rc522_create(&config, scanner);
     if(err != ESP_OK){
-        ESP_LOGE(RFID, "Failed to create SPI driver %s", esp_err_to_name(err));
-        return;
+        ESP_LOGE(TAG, "Reader Creation Failed %s", esp_err_to_name(err));
+        return err;
     }
 
     //Register Events
     err = rc522_register_events(
-        reader,
-        RC522_EVENT_PICC_STATE_CHANGED,
-        card_event_handler,
-        NULL
+        *scanner,
+        RC522_EVENT_ANY,
+        rfid_handler,
+        reader_id
     );
     if(err != ESP_OK){
-        ESP_LOGE(RFID, "Failed to register events %s", esp_err_to_name(err));
-        return;
+        ESP_LOGE(TAG, "Failed to register events %s", esp_err_to_name(err));
+        return err;
     }
 
     //Start
-    err = rc522_start(reader);
+    err = rc522_start(*scanner);
     if(err != ESP_OK){
-        ESP_LOGE(RFID, "Failed to start reader %s", esp_err_to_name(err));
-        return;
+        ESP_LOGE(TAG, "Failed to start reader %s", esp_err_to_name(err));
+        return err;
     }
+
+    return ESP_OK;
 
 }
 
 
-void rfid(){
-    ESP_LOGI(RFID, "RFID, Entance Starting...");
-    configure_bus();
-    configure_driver();
-    configure_reader();    
+void rfid(void)
+{
+    ESP_LOGI(TAG, "Starting RFID reader...");
+
+    esp_err_t err = initialize_spi_bus();
+    if (err != ESP_OK){
+        ESP_LOGE(TAG, "SPI initialization failed. Stopping RFID setup.");
+        return;
+    }
+
+    esp_err_t err_ent = configure_reader(RFID_CS_ENTRY, &entry_scanner, &entry_id);
+    if (err_ent != ESP_OK){
+        ESP_LOGE(TAG, "Entry reader creation failed.");
+    }
+
+    esp_err_t err_ex = configure_reader(RFID_CS_EXIT, &exit_scanner, &exit_id);
+    if (err_ex != ESP_OK){
+        ESP_LOGE(TAG, "Exit reader creation failed.");
+    }
+
+    if(err_ex != ESP_OK && err_ent != ESP_OK){
+        ESP_LOGE(TAG, "Creation of entry and exit readers failed.");
+    }
+
+    ESP_LOGI(TAG, "RFID reader started. Present a card.");
 }

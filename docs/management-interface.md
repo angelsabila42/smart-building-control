@@ -183,35 +183,44 @@ a maintenance window). It is not a replacement for editing the schedule.
 
 ## Integration points
 
-### RFID reader (`entrance/src/rfid.c`)
+### RFID readers (`entrance/src/rfid.c`)
 
-The card handler calls:
+The dual-reader card handler (entry = CS 10, exit = CS 4) combines the door
+allowlist with the management policy:
 
 ```c
-const bool granted = management_access_check(uid_str, 'I');
+const char direction = (reader_id == RFID_EXIT) ? 'O' : 'I';
+const bool authorized =
+    (access_control_check(tag->serial_number) == ACCESS_GRANTED);
+const bool granted =
+    management_access_check_authorized(uid_str, direction, authorized);
 ```
 
-`management_access_check` applies the policy, records an entry in the event
-buffer (with UID, direction, decision and reason) and logs an `ACCESS_GRANTED`
-or `ACCESS_DENIED` audit line. The current entrance has a single reader, so
-presentations are treated as entry attempts. When the exit reader is added,
-call `management_access_check(uid_str, 'O')` there; egress will always be
-allowed.
+`management_access_check_authorized` applies the policy, records one entry in
+the event buffer (with UID, direction, combined decision and reason) and logs an
+`ACCESS_GRANTED` or `ACCESS_DENIED` audit line.
+
+- **Entry** opens only when the tag is on the allowlist **and** the schedule (or
+  an override) allows entry.
+- **Exit** is never blocked by the schedule. The allowlist still applies on the
+  exit reader, matching the existing `Accesscontrol/` behaviour.
+
+`management_access_check(uid, direction)` remains available; it is the same
+call with `authorized = true`, for handheld tests or terminals without an
+allowlist.
 
 ### Storage owner
 
-The SD-card module is not compiled into the current build. When it is wired up,
-call:
+The SD-card module is initialised in `app_main` after the readers start. When it
+mounts, `main.c` wires the audit trail:
 
 ```c
 management_app_set_storage(true);
+management_app_set_audit_hook(sd_audit_sink);
 ```
 
-and optionally register the SD log as the audit sink:
-
-```c
-management_app_set_audit_hook(sd_log_append);
-```
+`sd_audit_sink` is a small wrapper because `log_event()` returns `esp_err_t`
+while the audit hook is `void (*)(const char *, const char *)`.
 
 ### Network / room terminals
 
@@ -238,6 +247,7 @@ labels its JSON `"Room 1"`; this is a cross-team bug tracked in
 | --- | --- | --- |
 | `management_app_start()` | entrance `app_main` | Initialise NVS, policy, menu and console |
 | `management_access_check(uid, 'I'/'O')` | RFID/door owner | Apply policy and record the event |
+| `management_access_check_authorized(uid, dir, authorized)` | RFID/door owner | Combined allowlist + schedule decision (used by `rfid.c`) |
 | `management_app_set_storage(bool)` | SD-card owner | Reflect SD mount state in `status` |
 | `management_app_set_connectivity(bool, bool)` | network owner | Reflect Wi-Fi/MQTT state in `status` |
 | `management_app_update_room(index, occupied, light)` | room terminals via MQTT | Feed room status |

@@ -84,7 +84,8 @@ worked around locally.
 | `override on 2`, scan outside the window | `ACCESS GRANTED`, reason `administrator override active` |
 | After override expiry, scan again | `ACCESS DENIED` |
 | `schedule off`, scan at any time | `ACCESS GRANTED`, reason `schedule disabled` |
-| Scan at an exit point (when exit reader exists) | Always granted, reason `egress is never blocked` |
+| Scan an **authorized** tag at the exit reader | Granted at any time, reason `egress is never blocked by the schedule` |
+| Scan an **unauthorized** tag at the exit reader | Denied by the door allowlist (schedule is not consulted) |
 
 ### T5 — Events and status
 

@@ -236,11 +236,23 @@ bool management_app_ready(void)
 
 bool management_access_check(const char *uid, char direction)
 {
+    return management_access_check_authorized(uid, direction, true);
+}
+
+bool management_access_check_authorized(const char *uid,
+                                        char direction,
+                                        bool authorized)
+{
+    const bool is_exit = (direction == 'O' || direction == 'o');
+
+    /*
+     * Fail closed for entry, but never trap people inside if the management
+     * interface itself failed to start.
+     */
     if (!app_ready) {
-        return false;
+        return is_exit;
     }
 
-    const bool is_exit = (direction == 'O' || direction == 'o');
     const int64_t now = epoch_now();
     struct tm wall_clock;
 
@@ -252,7 +264,8 @@ bool management_access_check(const char *uid, char direction)
                                                              clock_ok ? &wall_clock : NULL,
                                                              now);
 
-    const bool allowed = access_decision_is_allowed(decision);
+    const bool schedule_allows = access_decision_is_allowed(decision);
+    const bool allowed = is_exit ? authorized : (authorized && schedule_allows);
 
     access_event_t event;
 
@@ -262,7 +275,9 @@ bool management_access_check(const char *uid, char direction)
     event.allowed = allowed;
 
     if (is_exit) {
-        snprintf(event.reason, sizeof(event.reason), "%s", "egress is never blocked");
+        snprintf(event.reason, sizeof(event.reason), "%s", "egress is never blocked by the schedule");
+    } else if (!authorized) {
+        snprintf(event.reason, sizeof(event.reason), "%s", "tag is not authorized");
     } else {
         snprintf(event.reason,
                  sizeof(event.reason),

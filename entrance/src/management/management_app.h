@@ -20,6 +20,17 @@ void management_app_start(void);
  */
 bool management_access_check(const char *uid, char direction);
 
+/*
+ * Same as management_access_check(), but also takes the door allowlist result
+ * (for example access_control_check() in Accesscontrol/).  Entry requires both
+ * an authorized tag and a schedule that allows entry; egress is never blocked
+ * by the schedule.  The recorded event uses the combined decision, so the
+ * serial history, the SD audit trail and the door behaviour cannot disagree.
+ */
+bool management_access_check_authorized(const char *uid,
+                                        char direction,
+                                        bool authorized);
+
 /* Convenience wrapper for the current single-reader entrance setup. */
 bool management_on_card_seen(const char *uid);
 
