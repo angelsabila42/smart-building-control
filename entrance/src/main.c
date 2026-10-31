@@ -1,12 +1,12 @@
 #include <stdio.h>
-#include "sd_card.h"
+#include "Sdcard/sd_card.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 
-#include "serv.h"
-#include "rgb.h" 
-#include "access_control.h"
+#include "Serv/serv.h"
+#include "Rgb/rgb.h" 
+#include "Accesscontrol/access_control.h"
 
 void rfid(void);
 static const char *TAG = "SD_CARD";
