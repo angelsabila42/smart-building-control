@@ -44,30 +44,6 @@ esp_err_t sd_card_init(void)
         return ESP_OK;
     }
 
-    spi_bus_config_t bus_config = {
-        .mosi_io_num = SD_MOSI_PIN,
-        .miso_io_num = SD_MISO_PIN,
-        .sclk_io_num = SD_SCLK_PIN,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 4000
-    };
-
-    esp_err_t ret = spi_bus_initialize(
-        SPI2_HOST,
-        &bus_config,
-        SDSPI_DEFAULT_DMA
-    );
-
-    if (ret != ESP_OK) {
-        if (ret != ESP_ERR_INVALID_STATE) {
-            ESP_LOGE(TAG, "SPI initialization failed: %s",
-                     esp_err_to_name(ret));
-            xSemaphoreGive(sd_mutex);
-            return ret;
-        }
-        ESP_LOGW(TAG, "SPI bus already initialized");
-    }
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.slot = SPI2_HOST;
@@ -82,7 +58,7 @@ esp_err_t sd_card_init(void)
         .allocation_unit_size = 16 * 1024
     };
 
-    ret = esp_vfs_fat_sdspi_mount(
+    esp_err_t ret = esp_vfs_fat_sdspi_mount(
         MOUNT_POINT,
         &host,
         &slot_config,
