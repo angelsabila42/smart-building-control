@@ -274,12 +274,16 @@ access_decision_t access_schedule_check(const access_schedule_t *schedule,
                                         const struct tm *when,
                                         int64_t now_epoch)
 {
-    if (schedule == NULL || when == NULL) {
+    if (schedule == NULL) {
         return ACCESS_DENIED_CLOCK_INVALID;
     }
 
     if (!schedule->schedule_enabled) {
         return ACCESS_ALLOWED_SCHEDULE_DISABLED;
+    }
+
+    if (when == NULL) {
+        return ACCESS_DENIED_CLOCK_INVALID;
     }
 
     if (access_schedule_override_active(schedule, now_epoch)) {

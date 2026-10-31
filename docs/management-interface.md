@@ -153,18 +153,20 @@ applies until the next reboot.
 | `time set YYYY-MM-DD HH:MM:SS` | Set the wall clock used for schedule decisions |
 
 The terminal has no network time source yet. Until an administrator sets the
-clock (or SNTP is added), schedule decisions **fail closed**: entry cards are
-denied with reason `clock not set; failing closed`, while exit is still
-allowed.
+clock (or SNTP is added), schedule enforcement **fails closed**: entry cards
+are denied with reason `clock not set; failing closed`, while exit is still
+allowed. Switching enforcement off (`schedule off`) also bypasses the clock
+check, so the door can be commissioned before the clock is set.
 
 ## Access policy
 
-1. **Exit is never blocked.** `access_schedule_check_exit()` always returns
-   `ACCESS_ALLOWED`. A scheduled restriction must never trap a person inside
-   the building.
+1. **Exit is never blocked by the schedule.** `access_schedule_check_exit()`
+   always returns `ACCESS_ALLOWED`. A scheduled restriction must never trap a
+   person inside the building. The door allowlist is still checked on the exit
+   reader.
 2. **Entry** is decided in this order:
-   1. No valid clock → deny (`ACCESS_DENIED_CLOCK_INVALID`).
-   2. Enforcement switched off → allow (`ACCESS_ALLOWED_SCHEDULE_DISABLED`).
+   1. Enforcement switched off → allow (`ACCESS_ALLOWED_SCHEDULE_DISABLED`).
+   2. No valid clock → deny (`ACCESS_DENIED_CLOCK_INVALID`).
    3. Temporary override active → allow (`ACCESS_ALLOWED_OVERRIDE`).
    4. Day closed → deny (`ACCESS_DENIED_DAY_CLOSED`).
    5. Current minute inside a window → allow (`ACCESS_ALLOWED`), otherwise

@@ -57,11 +57,13 @@ void run_schedule_tests(void)
     CHECK(!access_decision_is_allowed(ACCESS_DENIED_CLOCK_INVALID));
     CHECK_STR(access_decision_reason(ACCESS_DENIED_OUTSIDE_HOURS), "outside scheduled hours");
 
-    /* Disabling enforcement allows any time. */
+    /* Disabling enforcement allows any time, even before the clock is set. */
     schedule.schedule_enabled = false;
     CHECK_INT(access_schedule_check(&schedule, &sunday, 0), ACCESS_ALLOWED_SCHEDULE_DISABLED);
     CHECK_INT(access_schedule_check(&schedule, &monday, 0), ACCESS_ALLOWED_SCHEDULE_DISABLED);
+    CHECK_INT(access_schedule_check(&schedule, NULL, 0), ACCESS_ALLOWED_SCHEDULE_DISABLED);
     schedule.schedule_enabled = true;
+    CHECK_INT(access_schedule_check(&schedule, NULL, 0), ACCESS_DENIED_CLOCK_INVALID);
 
     /* Administrator override, with expiry. */
     access_schedule_set_override(&schedule, 1000);
