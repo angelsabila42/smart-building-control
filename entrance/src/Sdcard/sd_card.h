@@ -6,6 +6,7 @@
 
 esp_err_t sd_card_init(void);
 esp_err_t log_event(const char *event, const char *details);
+esp_err_t read_log(void);
 bool sd_card_is_mounted(void);
 
 #endif

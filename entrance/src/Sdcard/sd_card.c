@@ -158,6 +158,44 @@ esp_err_t log_event(const char *event, const char *details)
     xSemaphoreGive(sd_mutex);
     return result;
 }
+esp_err_t read_log(void)
+{
+    if (sd_mutex == NULL) {
+        ESP_LOGE(TAG, "SD-card module has not been initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    if (xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(5000)) != pdTRUE) {
+        ESP_LOGE(TAG, "Timed out waiting to read log");
+        return ESP_ERR_TIMEOUT;
+    }
+
+    if (!sd_mounted) {
+        ESP_LOGE(TAG, "SD card is not mounted");
+        xSemaphoreGive(sd_mutex);
+        return ESP_FAIL;
+    }
+
+    FILE *file = fopen(MOUNT_POINT "/cocis_log.csv", "r");
+
+    if (file == NULL) {
+        ESP_LOGE(TAG, "Could not open log file");
+        xSemaphoreGive(sd_mutex);
+        return ESP_FAIL;
+    }
+
+    char line[256];
+
+    printf("COCIS EVENT LOG\n");
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        printf("%s", line);
+    }
+
+    fclose(file);
+    xSemaphoreGive(sd_mutex);
+    return ESP_OK;
+}
 bool sd_card_is_mounted(void)
 {
     return sd_mounted;
