@@ -1,0 +1,6 @@
+-mlongcalls
+-fno-builtin-memcpy
+-fno-builtin-memset
+-fno-builtin-bzero
+"-specs=D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/specs/picolibc.specs"
+-fno-rtti
