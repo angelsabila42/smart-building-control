@@ -15,17 +15,16 @@ typedef struct {
 
 static int occupancy;
 
-//Create the student records
+//Create the user records
 static user_t users [] = {
     {230000, 17247175169ULL, true, false},
     {230001, 262913, true, false},
-    {230002, 13399893, true, false},
+    {230002, 293201977873ULL, true, false},
     {230003, 4469521, true, false},
     {230004, 52394, false, false}
 };
 
 static const size_t num_records = sizeof(users) / sizeof(users[0]);
-
 
 
 access_result_t access_control_check(uint64_t uid)

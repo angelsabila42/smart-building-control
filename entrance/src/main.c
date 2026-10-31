@@ -6,6 +6,7 @@
 
 #include "Serv/serv.h"
 #include "Rgb/rgb.h" 
+#include "Passage/passage.h"
 #include "Accesscontrol/access_control.h"
 #include "Sdcard/sd_card.h"
 
@@ -16,10 +17,14 @@ static const char *TAG = "MAIN";
 void app_main() {
     rgb_init();
     serv_init();
-    
-    rfid();
 
+    rfid();
     esp_err_t sd_result = sd_card_init();
+
+    button_init();
+    passage_task_init();
+    
+
     if (sd_result == ESP_OK) {
         log_event(TAG, "Entrance system started");
     } else {

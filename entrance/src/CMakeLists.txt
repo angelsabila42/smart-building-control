@@ -11,10 +11,12 @@ idf_component_register(
         "Rgb/rgb.c"
         "Serv/serv.c"
         "Sdcard/sd_card.c"
+        "Passage/passage.c"
     INCLUDE_DIRS
         "."
         "Rgb"
         "Serv"
         "Sdcard"
         "Accesscontrol"
+        "Passage"
 )

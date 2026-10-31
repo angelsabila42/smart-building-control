@@ -11,6 +11,7 @@
 #include "Rgb/rgb.h"
 #include "Serv/serv.h"
 #include "Sdcard/sd_card.h"
+#include "Passage/passage.h"
 #include "Accesscontrol/access_control.h"
 
 //SPI communication pins
@@ -69,6 +70,7 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
         if(tag != NULL){
             ESP_LOGI(TAG, "Card scanned! Serial number: %" PRIu64, tag->serial_number);
             access_result_t result = access_control_check(tag->serial_number);
+            
             char uid_str[21];
             snprintf(uid_str, sizeof(uid_str), "%" PRIu64, tag->serial_number);
 
@@ -78,7 +80,7 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Entry Access Granted");
                     log_event("ENTRY_GRANTED", uid_str);
-                    occupancy_update(tag->serial_number, true);
+                    passage_set_pending_entry(tag->serial_number);
 
                     rgb_entry_granted();
                     entry_open();
@@ -94,7 +96,7 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Exit Access Granted");
                     log_event("EXIT_GRANTED", uid_str);
-                    occupancy_update(tag->serial_number, false);
+                    passage_set_pending_exit(tag->serial_number);
 
                     rgb_exit_granted();
                     exit_open();
