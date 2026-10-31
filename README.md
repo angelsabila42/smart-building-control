@@ -51,6 +51,42 @@ The serial interface is intended to provide menus or commands for monitoring and
 
 An SD card module is proposed for persistent records and other data that exceed the microcontrollers' available storage. The implementation should define how terminals share or reconcile records and how it handles communication or storage failures.
 
+## Management Interface (Implemented)
+
+The entrance terminal implements a serial management interface on UART0 at **115200 baud**. It provides monitoring commands (`help`, `status`, `events`, `schedule`, `time`, `whoami`) and protected configuration commands for the access schedule, clock and administrator password.
+
+- Configuration changes require `login <user> <password>`. Sessions expire after 5 minutes of inactivity, and three failed logins lock the account for 60 seconds.
+- The default administrator account is `admin` / `ChangeMe123`; change it during commissioning with `passwd <old> <new>`.
+- Schedule windows are validated (start before end, no overlaps, at most two windows per day, `24:00` end allowed) and invalid commands leave the previous configuration untouched.
+- **Exit is never restricted by the schedule.** Entry decisions fail closed if the clock has not been set, and administrators can grant a short audited override.
+- The schedule and credentials are stored in NVS and survive reboots.
+
+Example session:
+
+```
+cocis> status
+cocis> login admin ChangeMe123
+OK: logged in as admin
+cocis> schedule set mon 08:00 12:00 14:00 17:00
+OK: Mon 08:00-12:00, 14:00-17:00 (day enabled)
+cocis> schedule on
+OK: schedule enforcement ENABLED
+cocis> time set 2026-10-30 10:00:00
+OK: clock set to 2026-10-30 10:00:00
+cocis> override on 30
+OK: override active until 2026-10-30 10:30:00
+```
+
+Full command reference, the access-policy rules and integration hooks are in [`docs/management-interface.md`](docs/management-interface.md). Cross-terminal test scenarios are in [`docs/system-test-plan.md`](docs/system-test-plan.md).
+
+The portable management modules are covered by host unit tests that run without ESP-IDF or Wokwi:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/management-tests/run_tests.ps1
+```
+
+See [`tools/management-tests/README.md`](tools/management-tests/README.md) for details.
+
 ## Simulation and Implementation
 
 The assignment calls for a Wokwi simulation using ESP32 microcontrollers. The system should demonstrate the behavior of the three terminals and the system goals above. As implementation details are finalized, add the Wokwi project link, wiring diagrams, required components, build instructions, and example serial commands here.

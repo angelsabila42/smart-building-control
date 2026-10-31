@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <inttypes.h>
 
+#include <stdbool.h>
+
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 
@@ -12,6 +14,7 @@
 #include "Serv/serv.h"
 #include "Sdcard/sd_card.h"
 #include "Accesscontrol/access_control.h"
+#include "management/management_app.h"
 
 //SPI communication pins
 #define RFID_MISO GPIO_NUM_37
@@ -68,46 +71,58 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
 
         if(tag != NULL){
             ESP_LOGI(TAG, "Card scanned! Serial number: %" PRIu64, tag->serial_number);
-            access_result_t result = access_control_check(tag->serial_number);
+
             char uid_str[21];
             snprintf(uid_str, sizeof(uid_str), "%" PRIu64, tag->serial_number);
+
+            /*
+             * Two independent checks apply to an entry:
+             *   1. the door allowlist in Accesscontrol/;
+             *   2. the management access schedule (never applied to egress).
+             * management_access_check_authorized() records one event with the
+             * combined decision so the serial log and the SD audit trail agree.
+             */
+            const char direction = (reader_id == RFID_EXIT) ? 'O' : 'I';
+            const bool authorized =
+                (access_control_check(tag->serial_number) == ACCESS_GRANTED);
+            const bool granted =
+                management_access_check_authorized(uid_str, direction, authorized);
 
             switch (reader_id)
             {
             case RFID_ENTRY:
-                if (result == ACCESS_GRANTED){
-                    ESP_LOGI("ACCESS", "Entry Access Granted");
+                if (granted){
+                    ESP_LOGI(TAG, "Entry access granted for %s", uid_str);
                     log_event("ENTRY_GRANTED", uid_str);
                     occupancy_update(tag->serial_number, true);
 
                     rgb_entry_granted();
                     entry_open();
-            }else{
-                    ESP_LOGI("ACCESS", "Entry Access Denied");
+                }else{
+                    ESP_LOGI(TAG, "Entry access denied for %s", uid_str);
                     log_event("ENTRY_DENIED", uid_str);
                     rgb_entry_denied();
                     entry_close();
-            }
-            break;
-            
+                }
+                break;
+
             case RFID_EXIT:
-                if (result == ACCESS_GRANTED){
-                    ESP_LOGI("ACCESS", "Exit Access Granted");
+                if (granted){
+                    ESP_LOGI(TAG, "Exit access granted for %s", uid_str);
                     log_event("EXIT_GRANTED", uid_str);
                     occupancy_update(tag->serial_number, false);
 
                     rgb_exit_granted();
                     exit_open();
                 }else{
-                    ESP_LOGI("ACCESS", "Exit Access Denied");
+                    ESP_LOGI(TAG, "Exit access denied for %s", uid_str);
                     log_event("EXIT_DENIED", uid_str);
 
                     rgb_exit_denied();
                     exit_close();
-
                 }
                 break;
-                
+
             default:
                 ESP_LOGE(TAG, "Unknown RFID reader identifier");
                 break;
@@ -173,7 +188,6 @@ void rfid(void)
     if (err_ent != ESP_OK){
         ESP_LOGE(TAG, "Entry reader creation failed.");
     }
-    
 
     esp_err_t err_ex = configure_reader(RFID_CS_EXIT, &exit_scanner, &exit_id);
     if (err_ex != ESP_OK){
