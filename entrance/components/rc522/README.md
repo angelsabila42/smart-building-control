@@ -1,109 +1,102 @@
 # esp-idf-rc522
 
-![CI](https://img.shields.io/github/actions/workflow/status/abobija/esp-idf-rc522/validate.yaml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white) [![Component Registry](https://img.shields.io/github/v/release/abobija/esp-idf-rc522?sort=date&display_name=release&style=for-the-badge&logo=espressif&logoColor=white&label=Latest%20version)](https://components.espressif.com/components/abobija/rc522)
+C library for interfacing ESP32 with MFRC522 RFID card reader.
 
-This repository contains [ESP-IDF](https://github.com/espressif/esp-idf) library (component) for communication with RFID cards using [MFRC522](https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf) reader.
+> Library currently just reads serial number of RFID tags, which is enough for most applications.
 
-![read-write-example](docs/img/read-write-example.png)
+## How to use
 
-Library takes care of polling the cards and managing the card lifecycle. It also fires events when a card is detected, removed, or when the card changes to any state described in ISO-14443. Additionally, it provides an API for reading and writing to card memory blocks.
+This directory is an ESP-IDF component. Clone it (or add it as submodule) into `components` directory of the project.
 
-## Installation
+## Example
 
-To install latest version of this component to your project, run:
+This is basic example of scanning RFID tags.
 
-```bash
-idf.py add-dependency "abobija/rc522"
+```c
+#include <esp_log.h>
+#include <inttypes.h>
+#include "rc522.h"
+
+static const char* TAG = "rc522-demo";
+static rc522_handle_t scanner;
+
+static void rc522_handler(void* arg, esp_event_base_t base, int32_t event_id, void* event_data)
+{
+    rc522_event_data_t* data = (rc522_event_data_t*) event_data;
+
+    switch(event_id) {
+        case RC522_EVENT_TAG_SCANNED: {
+                rc522_tag_t* tag = (rc522_tag_t*) data->ptr;
+                ESP_LOGI(TAG, "Tag scanned (sn: %" PRIu64 ")", tag->serial_number);
+            }
+            break;
+    }
+}
+
+void app_main()
+{
+    rc522_config_t config = {
+        .spi.host = VSPI_HOST,
+        .spi.miso_gpio = 25,
+        .spi.mosi_gpio = 23,
+        .spi.sck_gpio = 19,
+        .spi.sda_gpio = 22,
+    };
+
+    rc522_create(&config, &scanner);
+    rc522_register_events(scanner, RC522_EVENT_ANY, rc522_handler, NULL);
+    rc522_start(scanner);
+}
 ```
 
-Read more about esp-idf component manager in [official documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/tools/idf-component-manager.html).
+## FAQ
 
-## Support
+### **How to use I2C instead of SPI?**
 
-- Full support: `MIFARE 1K`, `MIFARE 4K`, `MIFARE Mini`
-- Partial support: Ultralight & NTAG families
-  - Supported commands: `GET_VERSION`, `READ`, `FAST_READ`, `WRITE`, `READ_CNT`,
-    `READ_SIG`, `PWD_AUTH`
-  - Supported features: PICC identification, read/write, page counts, password
-    authentication
-  - Unsupported commands: `INCR_CNT`, `WRITE_SIG`, `LOCK_SIG`, `AUTHENTICATE`,
-    `COMPAT_WRITE`, `VCSL`
-  - Unsupported features: signature validation, key authentication, high-level
-    configuration access (raw read + bit-manipulation only)
-- No support: ISO-14443-4 compatible PICCs, other proprietary PICC protocols
-- Communication protocols: `SPI` and `I2C`
+Set the property `.transport` of the config structure to `RC522_TRANSPORT_I2C` and choose GPIOs for data (`.i2c.sda_gpio`) and clock (`.i2c.scl_gpio`):
 
-See [examples](examples/) for example projects.
-
-## Create project from example
-
-> [!TIP]
-> To find more interesting examples (like [`memory_dump`](examples/memory_dump)), go to [examples](examples) folder.
-
-To run [`basic`](examples/basic) example, create it as follows:
-
-```bash
-idf.py create-project-from-example "abobija/rc522:basic"
+```c
+rc522_config_t config = {
+    .transport = RC522_TRANSPORT_I2C,
+    .i2c.sda_gpio = 18,
+    .i2c.scl_gpio = 19,
+};
 ```
 
-Then build and flash it as usual:
+### **How to use halfduplex in SPI transport?**
 
-```bash
-cd basic
-idf.py build flash monitor
+Set the `.spi.device_flags` property of the config to `SPI_DEVICE_HALFDUPLEX`. Other device flags (`SPI_DEVICE_*`) can be set here as well by chaining them with bitwise OR (`|`) operator.
+
+```c
+rc522_config_t config = {
+    .spi.host = VSPI_HOST,
+    .spi.miso_gpio = 25,
+    .spi.mosi_gpio = 23,
+    .spi.sck_gpio = 19,
+    .spi.sda_gpio = 22,
+    .spi.device_flags = SPI_DEVICE_HALFDUPLEX,
+};
 ```
 
-> [!NOTE]
-> [`basic`](examples/basic) example uses SPI communication. Find defined GPIO configuration in [basic.c](examples/basic/main/basic.c) file.
+### **How to attach RC522 to existing SPI bus?**
 
-## Pin Layout
+Let's say that spi bus `VSPI_HOST` has been already initialized, and rc522 needs to be attached to that bus. That can be accomplished with the next configuration. Property `.spi.bus_is_initialized` is required to be set to `true` in order to inform library to not initialize spi bus again.
 
-Pin layout is configurable by the user. To configure the GPIOs, check the `#define` statements in the [basic example](examples/basic/main/basic.c). If you are not using the RST pin, you can connect it to the 3.3V.
+> NOTE: Property `.spi.bus_is_initialized` will be deprecated in the future once when [this issue](https://github.com/espressif/esp-idf/issues/8745) is resolved.
 
-## Unit testing
-
-To run unit tests, go to [`test`](test) directory and set target to `linux`:
-
-```bash
-cd test
-idf.py --preview set-target linux
+```c
+rc522_config_t config = {
+    .spi.host = VSPI_HOST,
+    .spi.sda_gpio = 22,
+    .spi.bus_is_initialized = true,
+};
 ```
-
-Then build the project and run tests:
-
-```bash
-idf.py build && ./build/test.elf
-```
-
-## Security
-
-- Mifare Classic cards use the Crypto-1 cipher for authentication and encryption, which has been [broken](https://eprint.iacr.org/2008/166) for a long time. As a result, it is not advisable to use Mifare Classic cards for security-sensitive applications. Instead, consider using Mifare Plus or Desfire cards, which utilize AES encryption.
-- Even though block zero, which contains the UID, is typically considered as read-only, there are certain cards known as "magic" or "Chinese magic" cards that can be used to modify the UID. As a result, relying on the UID of a card as a secure identifier is not recommended.
-
-## Terms
-
-| Term | Description |
-| ---- | ----------- |
-| PCD  | Proximity Coupling Device (the card reader). In our case this is MFRC522 module |
-| PICC | Proximity Integrated Circuit Card (e.g: rfid card, tag, ...) |
-
-## References
-
-- [ISO/IEC 14443](https://en.wikipedia.org/wiki/ISO/IEC_14443) Identification cards - Contactless integrated circuit cards
-- [ISO/IEC 14443-2](http://www.emutag.com/iso/14443-2.pdf) Radio frequency power and signal interface
-- [ISO/IEC 14443-3](http://www.emutag.com/iso/14443-3.pdf) Initialization and anticollision
-- [ISO/IEC 14443-4](http://www.emutag.com/iso/14443-4.pdf) Transmission protocol
-- [MFRC522](https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf) MFRC522 - Standard performance MIFARE and NTAG frontend
-- [AN10833](https://www.nxp.com/docs/en/application-note/AN10833.pdf) MIFARE type identification procedure
-- [AN10834](https://www.nxp.com/docs/en/application-note/AN10834.pdf) MIFARE ISO/IEC 14443 PICC selection
-- [MF1S50YYX_V1](https://www.nxp.com/docs/en/data-sheet/MF1S50YYX_V1.pdf) MIFARE Classic EV1 1K
-- [MF1S70YYX_V1](https://www.nxp.com/docs/en/data-sheet/MF1S70YYX_V1.pdf) MIFARE Classic EV1 4K
 
 ## Author
 
-GitHub: [abobija](https://github.com/abobija)<br />
+GitHub: [abobija](https://github.com/abobija)<br>
 Homepage: [abobija.com](https://abobija.com)
 
 ## License
 
-This component is provided under Apache 2.0 license, see [LICENSE](LICENSE) file for details.
+[MIT](LICENSE)
