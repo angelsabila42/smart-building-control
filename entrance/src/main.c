@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "sd_card.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -17,11 +18,13 @@ void app_main() {
     serv_init();
     
     rfid();
-    esp_err_t ret = sd_card_init();
-    if(ret != ESP_OK){
-        ESP_LOGE(TAG, "SD card initialization failed");
+
+    esp_err_t sd_result = sd_card_init();
+    if (sd_result == ESP_OK) {
+        log_event(TAG, "Entrance system started");
+    } else {
+        ESP_LOGW(TAG, "SD card initialization failed: %s",
+        esp_err_to_name(sd_result));
     }
-    log_event("SYSTEM", "Entrance system started");
-    //Testing
    
 }
