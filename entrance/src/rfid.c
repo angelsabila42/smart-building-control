@@ -47,7 +47,12 @@ static esp_err_t initialize_spi_bus(void)
     .quadhd_io_num = -1,
     };
 
-    esp_err_t ret = spi_bus_initialize(SPI3_HOST, &config, SPI_DMA_CH_AUTO);
+    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &config, SPI_DMA_CH_AUTO);
+    if (ret == ESP_ERR_INVALID_STATE) {
+        ESP_LOGI(TAG, "SPI2 bus already initialized; sharing it with SD card");
+        return ESP_OK;
+    }
+
     if(ret != ESP_OK){
         ESP_LOGE(TAG, "Failed to initialize SPI bus: %s", esp_err_to_name(ret));
         return ret;
@@ -109,7 +114,7 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
 static esp_err_t configure_reader(gpio_num_t cs_pin, rc522_handle_t *scanner, rfid_reader_id_t *reader_id){
     rc522_config_t config = {
         .scan_interval_ms = 50,
-        .spi.host = SPI3_HOST,
+        .spi.host = SPI2_HOST,
         .spi.miso_gpio = RFID_MISO,
         .spi.mosi_gpio = RFID_MOSI,
         .spi.sck_gpio = RFID_SCK,
