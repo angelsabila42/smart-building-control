@@ -57,7 +57,7 @@ void control(){
             first_time = now;
         }
 
-        // PIR 1 followed by PIR 2: entering
+        //entering
         else if (pir1 && pir2 && first_sensor == 1) {
             occupancy++;
             gpio_set_level(LIGHT, occupancy > 0);
