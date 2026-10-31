@@ -47,8 +47,9 @@ static int64_t epoch_now(void)
     return (int64_t)time(NULL);
 }
 
-static bool clock_read(struct tm *out)
+static bool clock_read(void *context, struct tm *out)
 {
+    (void)context;
     const int64_t epoch = epoch_now();
 
     if (!time_epoch_is_plausible(epoch)) {
@@ -59,8 +60,9 @@ static bool clock_read(struct tm *out)
     return true;
 }
 
-static bool clock_write(const struct tm *value)
+static bool clock_write(void *context, const struct tm *value)
 {
+    (void)context;
     const time_t epoch = (time_t)time_tm_to_epoch(value);
     struct timeval tv = { .tv_sec = epoch, .tv_usec = 0 };
 
@@ -220,7 +222,7 @@ void management_app_start(void)
 
     struct tm probe;
 
-    if (!clock_read(&probe)) {
+    if (!clock_read(NULL, &probe)) {
         ESP_LOGW(APP_TAG, "Clock is not set; access decisions fail closed until 'time set'");
     }
 
@@ -256,7 +258,7 @@ bool management_access_check_authorized(const char *uid,
     const int64_t now = epoch_now();
     struct tm wall_clock;
 
-    const bool clock_ok = clock_read(&wall_clock);
+    const bool clock_ok = clock_read(NULL, &wall_clock);
 
     access_decision_t decision = is_exit
                                      ? access_schedule_check_exit()
@@ -341,3 +343,4 @@ void management_app_set_audit_hook(void (*hook)(const char *event, const char *d
 {
     audit_hook = hook;
 }
+

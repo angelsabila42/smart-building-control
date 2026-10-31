@@ -87,6 +87,17 @@ powershell -ExecutionPolicy Bypass -File tools/management-tests/run_tests.ps1
 
 See [`tools/management-tests/README.md`](tools/management-tests/README.md) for details.
 
+## Building the firmware
+
+Each terminal is its own PlatformIO project (`entrance/`, `lecture_room_1/`, `lecture_room_2/`), using the ESP-IDF framework:
+
+```powershell
+cd entrance
+pio run --environment esp32-s3-devkitc-1
+```
+
+**Important:** PlatformIO rejects project paths that contain a space (`Detected a whitespace character in project paths`). Clone the repository to a path such as `C:\Users\<you>\smart-building-control`, not a folder like `Desktop\My Projects\...`.
+
 ## Simulation and Implementation
 
 The assignment calls for a Wokwi simulation using ESP32 microcontrollers. The system should demonstrate the behavior of the three terminals and the system goals above. As implementation details are finalized, add the Wokwi project link, wiring diagrams, required components, build instructions, and example serial commands here.
