@@ -13,6 +13,7 @@
 #include "Sdcard/sd_card.h"
 #include "Passage/passage.h"
 #include "Accesscontrol/access_control.h"
+#include "Alarm/alarm.h"
 
 //SPI communication pins
 #define RFID_MISO GPIO_NUM_37
@@ -69,6 +70,15 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
 
         if(tag != NULL){
             ESP_LOGI(TAG, "Card scanned! Serial number: %" PRIu64, tag->serial_number);
+
+            /* Emergency alarm — open all doors regardless of user or schedule */
+            if (alarm_is_active()) {
+                ESP_LOGW(TAG, "ALARM ACTIVE: granting emergency access");
+                entry_open();
+                exit_open();
+                return;
+            }
+
             access_result_t result = access_control_check(tag->serial_number);
             
             char uid_str[21];
