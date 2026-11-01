@@ -12,6 +12,7 @@
 #include "Serv/serv.h"
 #include "Sdcard/sd_card.h"
 #include "Accesscontrol/access_control.h"
+#include "mqtt.h"
 
 //SPI communication pins
 #define RFID_MISO GPIO_NUM_37
@@ -71,6 +72,11 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
             access_result_t result = access_control_check(tag->serial_number);
             char uid_str[21];
             snprintf(uid_str, sizeof(uid_str), "%" PRIu64, tag->serial_number);
+            mqtt_publish_card_scan(
+                tag->serial_number,
+                reader_id == RFID_ENTRY ? "entry" : "exit",
+                result == ACCESS_GRANTED
+            );
 
             switch (reader_id)
             {
@@ -78,7 +84,11 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Entry Access Granted");
                     log_event("ENTRY_GRANTED", uid_str);
-                    occupancy_update(tag->serial_number, true);
+                    if (occupancy_update(tag->serial_number, true)) {
+                        mqtt_publish_building_occupancy(
+                            occupancy_get_current()
+                        );
+                    }
 
                     rgb_entry_granted();
                     entry_open();
@@ -94,7 +104,11 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Exit Access Granted");
                     log_event("EXIT_GRANTED", uid_str);
-                    occupancy_update(tag->serial_number, false);
+                    if (occupancy_update(tag->serial_number, false)) {
+                        mqtt_publish_building_occupancy(
+                            occupancy_get_current()
+                        );
+                    }
 
                     rgb_exit_granted();
                     exit_open();
