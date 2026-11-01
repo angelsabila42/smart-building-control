@@ -35,7 +35,8 @@ void alarm_set(bool active)
         ESP_LOGI(TAG, "Alarm CLEARED — normal access resumed");
         entry_close();
         exit_close();
-        rgb_off();
+        entry_rgb_off();
+        exit_rgb_off();
         log_event("ALARM", "CLEARED");
     }
 }
