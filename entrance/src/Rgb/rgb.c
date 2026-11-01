@@ -41,7 +41,8 @@ static void configure_rgb_timer(void)
         .timer_num = LEDC_TIMER_0,
         .duty_resolution = LEDC_TIMER_8_BIT,
         .freq_hz = 5000,
-        .clk_cfg =  LEDC_USE_XTAL_CLK
+        // .clk_cfg =  LEDC_USE_XTAL_CLK
+        .clk_cfg = LEDC_USE_APB_CLK
     };
     esp_err_t err = ledc_timer_config(&ledc_timer);
     if(err != ESP_OK){
