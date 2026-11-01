@@ -10,7 +10,7 @@
       "left": -62.63,
       "attrs": { "builder": "esp-idf" }
     },
-    { "type": "board-mfrc522", "id": "rfid1", "top": -12.25, "left": 89.84, "attrs": {} },
+    { "type": "board-mfrc522", "id": "rfid1", "top": -165.85, "left": 118.64, "attrs": {} },
     { "type": "wokwi-microsd-card", "id": "sd1", "top": 77.03, "left": -259.13, "attrs": {} },
     {
       "type": "wokwi-vcc",
@@ -34,14 +34,14 @@
     {
       "type": "wokwi-rgb-led",
       "id": "rgb1",
-      "top": 100,
-      "left": 317.9,
+      "top": -5.6,
+      "left": 308.3,
       "attrs": { "common": "anode" }
     },
     {
       "type": "wokwi-rgb-led",
       "id": "rgb2",
-      "top": 416.8,
+      "top": 474.4,
       "left": 327.5,
       "attrs": { "common": "anode" }
     },
@@ -53,9 +53,32 @@
       "rotate": 180,
       "attrs": {}
     },
-    { "type": "wokwi-vcc", "id": "vcc5", "top": 480.76, "left": 336, "rotate": 180, "attrs": {} },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc5",
+      "top": 536.64,
+      "left": 336.2,
+      "rotate": 180,
+      "attrs": {}
+    },
     { "type": "wokwi-vcc", "id": "vcc2", "top": 277.44, "left": 96.2, "rotate": 180, "attrs": {} },
-    { "type": "board-mfrc522", "id": "rfid2", "top": 496.55, "left": 99.44, "attrs": {} }
+    { "type": "board-mfrc522", "id": "rfid2", "top": 544.55, "left": 99.44, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn1",
+      "top": 429.8,
+      "left": 201.6,
+      "attrs": { "color": "red", "xray": "1", "bounce": "0" }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn2",
+      "top": 65,
+      "left": 192,
+      "attrs": { "color": "red", "xray": "1", "bounce": "0" }
+    },
+    { "type": "wokwi-pushbutton", "id": "alarm_btn", "top": 300, "left": -259.13, "attrs": { "color": "red", "label": "ALARM" } },
+    { "type": "wokwi-pushbutton", "id": "alarm_reset_btn", "top": 300, "left": -150, "attrs": { "color": "green", "label": "RESET" } }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
@@ -73,10 +96,10 @@
     [ "sd1:VCC", "vcc1:VCC", "red", [ "h0" ] ],
     [ "sd1:GND", "gnd1:GND", "black", [ "h19.2", "v0.11" ] ],
     [ "sd1:DI", "esp:35", "green", [ "h67.2", "v220.71", "h201.6", "v-201.6" ] ],
-    [ "servo2:GND", "esp:GND.1", "black", [ "h28.8", "v76.8", "h-403.2", "v-134.4" ] ],
+    [ "servo2:GND", "esp:GND.1", "black", [ "h28.8", "v163.2", "h-403.2", "v-220.8" ] ],
     [ "servo1:GND", "esp:GND.3", "black", [ "h0" ] ],
     [ "servo1:PWM", "esp:2", "green", [ "h-57.6", "v0.2" ] ],
-    [ "servo2:PWM", "esp:14", "green", [ "h48", "v124.6", "h-441.6", "v-67.2" ] ],
+    [ "servo2:PWM", "esp:14", "green", [ "h48", "v191.8", "h-441.6", "v-249.6" ] ],
     [ "servo2:V+", "vcc3:VCC", "red", [ "h0" ] ],
     [ "rgb1:R", "esp:11", "#8f4814", [ "v9.6", "h-249.6", "v172.8", "h-172.8", "v-153.6" ] ],
     [ "vcc4:VCC", "rgb1:COM", "red", [ "v0" ] ],
@@ -93,7 +116,15 @@
     [ "rfid2:3.3V", "esp:3V3.2", "red", [ "h-192", "v-9.6" ] ],
     [ "rfid2:SCK", "esp:36", "green", [ "h-28.8", "v-403.2", "h-38.4" ] ],
     [ "rfid2:MOSI", "esp:35", "green", [ "h-28.8", "v-403.2", "h-19.2" ] ],
-    [ "rfid2:MISO", "esp:37", "green", [ "h-38.4", "v-432" ] ]
+    [ "rfid2:MISO", "esp:37", "green", [ "h-38.4", "v-432" ] ],
+    [ "esp:GND.2", "btn2:2.l", "black", [ "v9.6", "h86.4", "v38.4" ] ],
+    [ "btn2:1.l", "esp:1", "green", [ "h0" ] ],
+    [ "esp:GND.4", "btn1:2.l", "black", [ "h57.6", "v0", "h28.8", "v192" ] ],
+    [ "btn1:1.l", "esp:13", "green", [ "h-307.2", "v-220.8", "h28.8" ] ],
+    [ "alarm_btn:1.l", "esp:GND.1", "black", [] ],
+    [ "alarm_btn:2.r", "esp:3", "red", [] ],
+    [ "alarm_reset_btn:1.l", "esp:GND.1", "black", [] ],
+    [ "alarm_reset_btn:2.r", "esp:6", "green", [] ]
   ],
   "dependencies": {}
 }
