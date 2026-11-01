@@ -1,4 +1,4 @@
-# Install script for directory: D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/managed_components/espressif__mqtt
+# Install script for directory: C:/Users/N.PK/smart-building-control/lecture_room_2/managed_components/espressif__mqtt
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,17 +39,17 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/espressif__mqtt/lib/mqtt_utils/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/espressif__mqtt/lib/mqtt_utils/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/espressif__mqtt/lib/mqtt_outbox/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/espressif__mqtt/lib/mqtt_outbox/cmake_install.cmake")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/espressif__mqtt/install_local_manifest.txt"
+  file(WRITE "C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/espressif__mqtt/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

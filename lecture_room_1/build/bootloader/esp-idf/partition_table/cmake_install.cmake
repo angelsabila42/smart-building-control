@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp/v6.1-beta1/esp-idf/components/partition_table
+# Install script for directory: C:/esp/v6.0.2/esp-idf/components/partition_table
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,6 +40,6 @@ endif()
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "D:/Apps/xammp/htdocs/smart-building-control/lecture_room_1/build/bootloader/esp-idf/partition_table/install_local_manifest.txt"
+  file(WRITE "C:/Users/N.PK/smart-building-control/lecture_room_1/build/bootloader/esp-idf/partition_table/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

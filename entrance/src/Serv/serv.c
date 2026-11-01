@@ -32,7 +32,8 @@ static void configure_servo_timer(void)
         .timer_num = LEDC_TIMER_1,
         .duty_resolution = LEDC_TIMER_10_BIT,
         .freq_hz = FREQ_HZ,
-        .clk_cfg =  LEDC_USE_XTAL_CLK
+        // .clk_cfg =  LEDC_USE_XTAL_CLK
+        .clk_cfg = LEDC_USE_APB_CLK
     };
 
     esp_err_t err = ledc_timer_config(&ledc_timer);

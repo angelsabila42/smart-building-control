@@ -12,6 +12,9 @@ idf_component_register(
         "Serv/serv.c"
         "Sdcard/sd_card.c"
         "Passage/passage.c"
+        "wifi/wifi.c"
+        "mqtt/mqtt.c"
+
     INCLUDE_DIRS
         "."
         "Rgb"
@@ -19,4 +22,20 @@ idf_component_register(
         "Sdcard"
         "Accesscontrol"
         "Passage"
+        "wifi"
+        "mqtt"
+        esp_wifi 
+        esp_event 
+        nvs_flash 
+        esp_netif
+    PRIV_REQUIRES 
+        esp_driver_gpio 
+        esp_driver_spi 
+        esp_driver_ledc 
+        esp_driver_sdspi 
+        rc522
+        fatfs
+        mqtt
+        esp_event
+
 )

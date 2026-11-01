@@ -31,7 +31,7 @@ extern int64_t first_time;
 #define MQTT_URI "mqtt://broker.hivemq.com:1883"
 #define MQTT_TOPIC "cocis/room1/status"
 
-#define TAG "ROOM1"
+#define TAG "ROOM2"
 
 extern esp_mqtt_client_handle_t mqtt_client;
 extern bool mqtt_connected;
