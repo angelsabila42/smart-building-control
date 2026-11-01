@@ -78,7 +78,7 @@
       "attrs": { "color": "red", "xray": "1", "bounce": "0" }
     },
     { "type": "wokwi-pushbutton", "id": "alarm_btn", "top": 300, "left": -259.13, "attrs": { "color": "red", "label": "ALARM" } },
-    { "type": "wokwi-pushbutton", "id": "alarm_reset_btn", "top": 420, "left": 480, "attrs": { "color": "green", "label": "RESET" } }
+    { "type": "wokwi-pushbutton", "id": "alarm_reset_btn", "top": 300, "left": -150, "attrs": { "color": "green", "label": "RESET" } }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
