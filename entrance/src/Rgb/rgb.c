@@ -95,8 +95,12 @@ static void configure_rgb_pwm(gpio_num_t RED_LED,
 
 }
 
-void rgb_off(){
+void exit_rgb_off(){
     setColor(255,255,255,LEDC_CHANNEL_3, LEDC_CHANNEL_4, LEDC_CHANNEL_5);
+    
+}
+
+void entry_rgb_off(){
     setColor(255,255,255,LEDC_CHANNEL_0, LEDC_CHANNEL_1, LEDC_CHANNEL_2);
 }
 
@@ -141,6 +145,7 @@ void rgb_init(void){
         LEDC_CHANNEL_5);
 
         //Turn both off initially
-        rgb_off();
+        entry_rgb_off();
+        exit_rgb_off();
     
 }

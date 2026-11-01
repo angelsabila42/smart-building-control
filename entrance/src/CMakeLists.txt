@@ -11,17 +11,19 @@ idf_component_register(
         "Rgb/rgb.c"
         "Serv/serv.c"
         "Sdcard/sd_card.c"
+        "Passage/passage.c"
         "wifi/wifi.c"
         "mqtt/mqtt.c"
+
     INCLUDE_DIRS
         "."
         "Rgb"
         "Serv"
         "Sdcard"
         "Accesscontrol"
+        "Passage"
         "wifi"
         "mqtt"
-    REQUIRES 
         esp_wifi 
         esp_event 
         nvs_flash 
@@ -35,4 +37,5 @@ idf_component_register(
         fatfs
         mqtt
         esp_event
+
 )

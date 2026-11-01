@@ -2,7 +2,8 @@
 #define RGB_H
 
 void rgb_init(void);
-void rgb_off(void);
+void entry_rgb_off(void);
+void exit_rgb_off(void);
 
 void rgb_entry_granted(void);
 void rgb_entry_denied(void);
