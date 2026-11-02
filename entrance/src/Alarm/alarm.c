@@ -9,18 +9,39 @@
 
 #define ALARM_GPIO       GPIO_NUM_3
 #define ALARM_RESET_GPIO GPIO_NUM_6
+#define NOTIFY_TRIGGER   0x01
+#define NOTIFY_RESET     0x02
 
 static const char *TAG = "ALARM";
 static volatile bool alarm_active = false;
+static TaskHandle_t alarm_task_handle = NULL;
 
 static void IRAM_ATTR alarm_isr_handler(void *arg)
 {
-    alarm_active = true;
+    BaseType_t woken = pdFALSE;
+    xTaskNotifyFromISR(alarm_task_handle, NOTIFY_TRIGGER, eSetBits, &woken);
+    portYIELD_FROM_ISR(woken);
 }
 
 static void IRAM_ATTR alarm_reset_isr_handler(void *arg)
 {
-    alarm_active = false;
+    BaseType_t woken = pdFALSE;
+    xTaskNotifyFromISR(alarm_task_handle, NOTIFY_RESET, eSetBits, &woken);
+    portYIELD_FROM_ISR(woken);
+}
+
+static void alarm_task(void *arg)
+{
+    uint32_t bits;
+    while (1) {
+        xTaskNotifyWait(0, 0xFFFFFFFF, &bits, portMAX_DELAY);
+        if (bits & NOTIFY_TRIGGER) {
+            alarm_set(true);
+        }
+        if (bits & NOTIFY_RESET) {
+            alarm_set(false);
+        }
+    }
 }
 
 bool alarm_is_active(void)
@@ -50,6 +71,8 @@ void alarm_set(bool active)
 
 void alarm_init(void)
 {
+    xTaskCreate(alarm_task, "alarm_task", 2048, NULL, 5, &alarm_task_handle);
+
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << ALARM_GPIO),
         .mode         = GPIO_MODE_INPUT,
@@ -59,7 +82,6 @@ void alarm_init(void)
     };
     gpio_config(&io_conf);
 
-    /* Reset button — GPIO 6, active high, clears the alarm */
     io_conf.pin_bit_mask = (1ULL << ALARM_RESET_GPIO);
     io_conf.intr_type    = GPIO_INTR_POSEDGE;
     gpio_config(&io_conf);
