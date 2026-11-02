@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// #include "app_config.h"
 #include "sd_card.h"
 
 #include "esp_log.h"
