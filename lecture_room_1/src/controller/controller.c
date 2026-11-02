@@ -81,7 +81,6 @@ void control(){
             printf("Exit detected. Occupancy: %d\n", occupancy);
         }
 
-        // Light follows estimated occupancy
         gpio_set_level(LIGHT, occupancy > 0 ? 1 : 0);
 
         vTaskDelay(pdMS_TO_TICKS(50));
