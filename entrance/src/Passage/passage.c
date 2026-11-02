@@ -127,7 +127,7 @@ void passage_task(void *params){
 
         if(exit_authorization_expired){
             exit_authorization_expired = false;
-            entry_close();
+            exit_close();
 
             if(pending_exit_uid != 0){
         
