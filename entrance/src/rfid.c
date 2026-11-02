@@ -11,9 +11,8 @@
 #include "Rgb/rgb.h"
 #include "Serv/serv.h"
 #include "Sdcard/sd_card.h"
-#include "Passage/passage.h"
 #include "Accesscontrol/access_control.h"
-#include "Alarm/alarm.h"
+#include "mqtt.h"
 
 //SPI communication pins
 #define RFID_MISO GPIO_NUM_37
@@ -70,19 +69,14 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
 
         if(tag != NULL){
             ESP_LOGI(TAG, "Card scanned! Serial number: %" PRIu64, tag->serial_number);
-
-            /* Emergency alarm — open all doors regardless of user or schedule */
-            if (alarm_is_active()) {
-                ESP_LOGW(TAG, "ALARM ACTIVE: granting emergency access");
-                entry_open();
-                exit_open();
-                return;
-            }
-
             access_result_t result = access_control_check(tag->serial_number);
-            
             char uid_str[21];
             snprintf(uid_str, sizeof(uid_str), "%" PRIu64, tag->serial_number);
+            mqtt_publish_card_scan(
+                tag->serial_number,
+                reader_id == RFID_ENTRY ? "entry" : "exit",
+                result == ACCESS_GRANTED
+            );
 
             switch (reader_id)
             {
@@ -90,7 +84,11 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Entry Access Granted");
                     log_event("ENTRY_GRANTED", uid_str);
-                    passage_set_pending_entry(tag->serial_number);
+                    if (occupancy_update(tag->serial_number, true)) {
+                        mqtt_publish_building_occupancy(
+                            occupancy_get_current()
+                        );
+                    }
 
                     rgb_entry_granted();
                     entry_open();
@@ -106,7 +104,11 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Exit Access Granted");
                     log_event("EXIT_GRANTED", uid_str);
-                    passage_set_pending_exit(tag->serial_number);
+                    if (occupancy_update(tag->serial_number, false)) {
+                        mqtt_publish_building_occupancy(
+                            occupancy_get_current()
+                        );
+                    }
 
                     rgb_exit_granted();
                     exit_open();

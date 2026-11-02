@@ -29,9 +29,12 @@ extern int64_t first_time;
 
 //#define MQTT_URI "mqtt://test.mosquitto.org"
 #define MQTT_URI "mqtt://broker.hivemq.com:1883"
-#define MQTT_TOPIC "cocis/room1/status"
+#define MQTT_TOPIC "cocis/room2/status"
+#define MQTT_BUILDING_OCCUPANCY_TOPIC "cocis/building/occupancy"
 
 #define TAG "ROOM2"
 
 extern esp_mqtt_client_handle_t mqtt_client;
 extern bool mqtt_connected;
+
+int building_get_occupancy(void);

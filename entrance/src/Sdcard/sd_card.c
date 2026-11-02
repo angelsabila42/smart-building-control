@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// #include "app_config.h"
 #include "sd_card.h"
 
 #include "esp_log.h"
@@ -134,7 +133,7 @@ esp_err_t log_event(const char *event, const char *details)
     xSemaphoreGive(sd_mutex);
     return result;
 }
-esp_err_t read_log(void)
+esp_err_t read_log(void (*print_fn)(const char *))
 {
     if (sd_mutex == NULL) {
         ESP_LOGE(TAG, "SD-card module has not been initialized");
@@ -161,12 +160,18 @@ esp_err_t read_log(void)
     }
 
     char line[256];
+    char outline[258];
 
-    printf("COCIS EVENT LOG\n");
+    print_fn("--- COCIS EVENT LOG ---");
 
     while (fgets(line, sizeof(line), file) != NULL) {
-        printf("%s", line);
+        int len = strlen(line);
+        if (len > 0 && line[len-1] == '\n') line[len-1] = '\0';
+        snprintf(outline, sizeof(outline), "%s", line);
+        print_fn(outline);
     }
+
+    print_fn("--- END OF LOG ---");
 
     fclose(file);
     xSemaphoreGive(sd_mutex);

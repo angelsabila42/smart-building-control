@@ -1,11 +1,19 @@
 {
     "version":            "1.3",
     "project_name":       "lecture_room_2",
-    "project_version":    "2795f82-dirty",
+<<<<<<< HEAD
+    "project_version":    "91ff1fe-dirty",
+    "project_path":       "D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2",
+    "idf_path":           "C:/esp/v6.1-beta1/esp-idf",
+    "build_dir":          "D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build",
+    "config_file":        "D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/sdkconfig",
+=======
+    "project_version":    "c522080-dirty",
     "project_path":       "C:/Users/N.PK/smart-building-control/lecture_room_2",
     "idf_path":           "C:/esp/v6.0.2/esp-idf",
     "build_dir":          "C:/Users/N.PK/smart-building-control/lecture_room_2/build",
     "config_file":        "C:/Users/N.PK/smart-building-control/lecture_room_2/sdkconfig",
+>>>>>>> bacc2da2107b42d62bb66f17c2fb25b1e208ca25
     "config_defaults":    "",
     "bootloader_elf":     "C:/Users/N.PK/smart-building-control/lecture_room_2/build/bootloader/bootloader.elf",
     "app_elf":            "lecture_room_2.elf",
