@@ -293,6 +293,16 @@ static void mqtt_event_handler(
     }
 }
 
+int mqtt_get_room_occupancy(int room)
+{
+    return room == 1 ? room1_occupancy : room2_occupancy;
+}
+
+bool mqtt_get_room_light(int room)
+{
+    return room == 1 ? room1_light_on : room2_light_on;
+}
+
 void mqtt_start(void)
 {
     if (mqtt_client != NULL) {

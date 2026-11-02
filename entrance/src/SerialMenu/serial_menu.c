@@ -4,6 +4,7 @@
 #include "Accesscontrol/access_control.h"
 #include "Sdcard/sd_card.h"
 #include "Alarm/alarm.h"
+#include "mqtt/mqtt.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -138,9 +139,14 @@ static void handle_access_log(void)
 
 static void handle_room_status(void)
 {
-    /* Placeholder — room data comes from lecture-room ESP32s via MQTT */
-    u_println("Room 1: status unavailable (awaiting MQTT update)");
-    u_println("Room 2: status unavailable (awaiting MQTT update)");
+    char line[64];
+    for (int r = 1; r <= 2; r++) {
+        snprintf(line, sizeof(line), "Room %d: occupancy=%d  light=%s",
+                 r,
+                 mqtt_get_room_occupancy(r),
+                 mqtt_get_room_light(r) ? "ON" : "OFF");
+        u_println(line);
+    }
 }
 
 static void handle_time_schedule(void)
