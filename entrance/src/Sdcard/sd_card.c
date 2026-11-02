@@ -44,30 +44,6 @@ esp_err_t sd_card_init(void)
         return ESP_OK;
     }
 
-    spi_bus_config_t bus_config = {
-        .mosi_io_num = SD_MOSI_PIN,
-        .miso_io_num = SD_MISO_PIN,
-        .sclk_io_num = SD_SCLK_PIN,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 4000
-    };
-
-    esp_err_t ret = spi_bus_initialize(
-        SPI2_HOST,
-        &bus_config,
-        SDSPI_DEFAULT_DMA
-    );
-
-    if (ret != ESP_OK) {
-        if (ret != ESP_ERR_INVALID_STATE) {
-            ESP_LOGE(TAG, "SPI initialization failed: %s",
-                     esp_err_to_name(ret));
-            xSemaphoreGive(sd_mutex);
-            return ret;
-        }
-        ESP_LOGW(TAG, "SPI bus already initialized");
-    }
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.slot = SPI2_HOST;
@@ -82,7 +58,7 @@ esp_err_t sd_card_init(void)
         .allocation_unit_size = 16 * 1024
     };
 
-    ret = esp_vfs_fat_sdspi_mount(
+    esp_err_t ret = esp_vfs_fat_sdspi_mount(
         MOUNT_POINT,
         &host,
         &slot_config,
@@ -157,6 +133,44 @@ esp_err_t log_event(const char *event, const char *details)
     }
     xSemaphoreGive(sd_mutex);
     return result;
+}
+esp_err_t read_log(void)
+{
+    if (sd_mutex == NULL) {
+        ESP_LOGE(TAG, "SD-card module has not been initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    if (xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(5000)) != pdTRUE) {
+        ESP_LOGE(TAG, "Timed out waiting to read log");
+        return ESP_ERR_TIMEOUT;
+    }
+
+    if (!sd_mounted) {
+        ESP_LOGE(TAG, "SD card is not mounted");
+        xSemaphoreGive(sd_mutex);
+        return ESP_FAIL;
+    }
+
+    FILE *file = fopen(MOUNT_POINT "/cocis_log.csv", "r");
+
+    if (file == NULL) {
+        ESP_LOGE(TAG, "Could not open log file");
+        xSemaphoreGive(sd_mutex);
+        return ESP_FAIL;
+    }
+
+    char line[256];
+
+    printf("COCIS EVENT LOG\n");
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        printf("%s", line);
+    }
+
+    fclose(file);
+    xSemaphoreGive(sd_mutex);
+    return ESP_OK;
 }
 bool sd_card_is_mounted(void)
 {

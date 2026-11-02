@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp/v6.1-beta1/esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/include
+# Install script for directory: C:/esp/v6.0.2/esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/include
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -38,16 +38,16 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE DIRECTORY FILES "C:/esp/v6.1-beta1/esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/include/." FILES_MATCHING REGEX "/[^/]*\\.h$" REGEX "/crypto\\_config\\.h$" EXCLUDE)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE DIRECTORY FILES "C:/esp/v6.0.2/esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/include/." FILES_MATCHING REGEX "/[^/]*\\.h$" REGEX "/crypto\\_config\\.h$" EXCLUDE)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/psa" TYPE FILE FILES "C:/esp/v6.1-beta1/esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/include/psa/crypto_config.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/psa" TYPE FILE FILES "C:/esp/v6.0.2/esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/include/psa/crypto_config.h")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/include/install_local_manifest.txt"
+  file(WRITE "C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/include/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

@@ -5,3 +5,7 @@
 # Local secrets
 .env
 .env.*
+/entrance/build
+/lecture_room_1/build
+/lecture_room_1/build
+*.py

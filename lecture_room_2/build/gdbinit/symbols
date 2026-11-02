@@ -13,8 +13,8 @@ end
 
 # Load bootloader symbols
 set confirm off
-    add-symbol-file D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/bootloader/bootloader.elf
+    add-symbol-file C:/Users/N.PK/smart-building-control/lecture_room_2/build/bootloader/bootloader.elf
 set confirm on
 
 # Load application symbols
-file D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/lecture_room_2.elf
+file C:/Users/N.PK/smart-building-control/lecture_room_2/build/lecture_room_2.elf

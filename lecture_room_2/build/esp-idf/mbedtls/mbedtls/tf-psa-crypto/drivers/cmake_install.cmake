@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp/v6.1-beta1/esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/drivers
+# Install script for directory: C:/esp/v6.0.2/esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/drivers
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,16 +39,16 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/everest/cmake_install.cmake")
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/p256-m/cmake_install.cmake")
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/builtin/cmake_install.cmake")
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/pqcp/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/everest/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/p256-m/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/builtin/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/pqcp/cmake_install.cmake")
 
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/install_local_manifest.txt"
+  file(WRITE "C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

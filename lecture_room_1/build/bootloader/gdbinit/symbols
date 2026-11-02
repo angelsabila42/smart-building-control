@@ -17,4 +17,4 @@ set confirm off
 set confirm on
 
 # Load application symbols
-file D:/Apps/xammp/htdocs/smart-building-control/lecture_room_1/build/bootloader/bootloader.elf
+file C:/Users/N.PK/smart-building-control/lecture_room_1/build/bootloader/bootloader.elf

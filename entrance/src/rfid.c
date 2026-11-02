@@ -8,9 +8,11 @@
 #include "esp_err.h"
 
 #include "rc522.h"
-#include "rgb.h"
-#include "serv.h"
-#include "access_control.h"
+#include "Rgb/rgb.h"
+#include "Serv/serv.h"
+#include "Sdcard/sd_card.h"
+#include "Accesscontrol/access_control.h"
+#include "mqtt.h"
 
 //SPI communication pins
 #define RFID_MISO GPIO_NUM_37
@@ -45,9 +47,10 @@ static esp_err_t initialize_spi_bus(void)
     .sclk_io_num = 36,
     .quadwp_io_num = -1,
     .quadhd_io_num = -1,
+    .max_transfer_sz = 4000,
     };
 
-    esp_err_t ret = spi_bus_initialize(SPI3_HOST, &config, SPI_DMA_CH_AUTO);
+    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &config, SPI_DMA_CH_AUTO);
     if(ret != ESP_OK){
         ESP_LOGE(TAG, "Failed to initialize SPI bus: %s", esp_err_to_name(ret));
         return ret;
@@ -67,17 +70,31 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
         if(tag != NULL){
             ESP_LOGI(TAG, "Card scanned! Serial number: %" PRIu64, tag->serial_number);
             access_result_t result = access_control_check(tag->serial_number);
+            char uid_str[21];
+            snprintf(uid_str, sizeof(uid_str), "%" PRIu64, tag->serial_number);
+            mqtt_publish_card_scan(
+                tag->serial_number,
+                reader_id == RFID_ENTRY ? "entry" : "exit",
+                result == ACCESS_GRANTED
+            );
 
             switch (reader_id)
             {
             case RFID_ENTRY:
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Entry Access Granted");
-                    occupancy_update(tag->serial_number, true);
+                    log_event("ENTRY_GRANTED", uid_str);
+                    if (occupancy_update(tag->serial_number, true)) {
+                        mqtt_publish_building_occupancy(
+                            occupancy_get_current()
+                        );
+                    }
+
                     rgb_entry_granted();
                     entry_open();
             }else{
                     ESP_LOGI("ACCESS", "Entry Access Denied");
+                    log_event("ENTRY_DENIED", uid_str);
                     rgb_entry_denied();
                     entry_close();
             }
@@ -86,11 +103,19 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
             case RFID_EXIT:
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Exit Access Granted");
-                    occupancy_update(tag->serial_number, false);
+                    log_event("EXIT_GRANTED", uid_str);
+                    if (occupancy_update(tag->serial_number, false)) {
+                        mqtt_publish_building_occupancy(
+                            occupancy_get_current()
+                        );
+                    }
+
                     rgb_exit_granted();
                     exit_open();
                 }else{
                     ESP_LOGI("ACCESS", "Exit Access Denied");
+                    log_event("EXIT_DENIED", uid_str);
+
                     rgb_exit_denied();
                     exit_close();
 
@@ -109,7 +134,7 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
 static esp_err_t configure_reader(gpio_num_t cs_pin, rc522_handle_t *scanner, rfid_reader_id_t *reader_id){
     rc522_config_t config = {
         .scan_interval_ms = 50,
-        .spi.host = SPI3_HOST,
+        .spi.host = SPI2_HOST,
         .spi.miso_gpio = RFID_MISO,
         .spi.mosi_gpio = RFID_MOSI,
         .spi.sck_gpio = RFID_SCK,

@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp/v6.1-beta1/esp-idf/components/esp_hw_support
+# Install script for directory: C:/esp/v6.0.2/esp-idf/components/esp_hw_support
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,27 +39,22 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/port/esp32s3/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/port/esp32s3/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/mspi/mspi_timing_tuning/port/esp32s3/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/mspi_timing_tuning/port/esp32s3/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/lowpower/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
-  include("D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/modem/cmake_install.cmake")
+  include("C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/lowpower/cmake_install.cmake")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "D:/Apps/xammp/htdocs/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/install_local_manifest.txt"
+  file(WRITE "C:/Users/N.PK/smart-building-control/lecture_room_2/build/esp-idf/esp_hw_support/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

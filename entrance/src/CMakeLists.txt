@@ -1,9 +1,43 @@
-# This file was automatically generated for projects
-# without default 'CMakeLists.txt' file.
-
 FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/src/*.*)
 
 idf_component_register(
-    SRC_DIRS "."
-    INCLUDE_DIRS "."
+    SRCS
+        "main.c"
+        "rfid.c"
+        "Accesscontrol/access_control.c"
+        "Rgb/rgb.c"
+        "Serv/serv.c"
+        "Sdcard/sd_card.c"
+        "Passage/passage.c"
+        "wifi/wifi.c"
+        "mqtt/mqtt.c"
+        "Schedule/schedule.c"
+        "AdminAuth/admin_auth.c"
+        "SerialMenu/serial_menu.c"
+        "Alarm/alarm.c"
+    INCLUDE_DIRS
+        "."
+        "Rgb"
+        "Serv"
+        "Sdcard"
+        "Accesscontrol"
+        "Passage"
+        "wifi"
+        "mqtt"
+        "Schedule"
+        "AdminAuth"
+        "SerialMenu"
+        "Alarm"
+    PRIV_REQUIRES
+        esp_driver_gpio
+        esp_driver_spi
+        esp_driver_ledc
+        esp_driver_sdspi
+        rc522
+        fatfs
+        mqtt
+        esp_event
+        esp_wifi
+        nvs_flash
+        esp_netif
 )
