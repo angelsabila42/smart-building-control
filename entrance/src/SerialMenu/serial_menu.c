@@ -129,8 +129,11 @@ static void handle_occupancy(void)
 
 static void handle_access_log(void)
 {
-    u_println("Access log is stored on the SD card at /sdcard/cocis_log.csv");
-    u_println("Mount the SD card and open the file to review entries.");
+    if (!sd_card_is_mounted()) {
+        u_println("SD card not mounted — cannot read log.");
+        return;
+    }
+    read_log(u_println);
 }
 
 static void handle_room_status(void)
