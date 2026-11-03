@@ -37,6 +37,7 @@ void app_main(void)
     passage_task_init();
 
     if (sd_result == ESP_OK) {
+        users_load();
         log_event(TAG, "Entrance system started");
     } else {
         ESP_LOGW(TAG, "SD card initialization failed: %s", esp_err_to_name(sd_result));

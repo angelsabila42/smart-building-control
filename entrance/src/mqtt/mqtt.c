@@ -4,8 +4,7 @@
 #include <string.h>
 
 #include "mqtt.h"
-#include "Accesscontrol/access_control.h"
-#include "Sdcard/sd_card.h"
+#include "../Accesscontrol/access_control.h"
 
 #include "esp_err.h"
 #include "esp_event.h"
@@ -330,20 +329,14 @@ static void mqtt_event_handler(
     }
 }
 
-bool mqtt_wait_for_connection(TickType_t timeout_ticks)
+int mqtt_get_room_occupancy(int room)
 {
-    if (mqtt_event_group == NULL) {
-        return false;
-    }
+    return room == 1 ? room1_occupancy : room2_occupancy;
+}
 
-    EventBits_t bits = xEventGroupWaitBits(
-        mqtt_event_group,
-        MQTT_CONNECTED_BIT,
-        pdFALSE,
-        pdTRUE,
-        timeout_ticks
-    );
-    return (bits & MQTT_CONNECTED_BIT) != 0;
+bool mqtt_get_room_light(int room)
+{
+    return room == 1 ? room1_light_on : room2_light_on;
 }
 
 void mqtt_start(void)

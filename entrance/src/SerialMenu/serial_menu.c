@@ -1,11 +1,10 @@
 #include "serial_menu.h"
-#include "AdminAuth/admin_auth.h"
-#include "Schedule/schedule.h"
-#include "Accesscontrol/access_control.h"
-#include "Sdcard/sd_card.h"
-#include "Alarm/alarm.h"
-#include "mqtt/mqtt.h"
-#include "wifi/wifi.h"
+#include "../AdminAuth/admin_auth.h"
+#include "../Schedule/schedule.h"
+#include "../Accesscontrol/access_control.h"
+#include "../Sdcard/sd_card.h"
+#include "../Alarm/alarm.h"
+#include "../mqtt/mqtt.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -141,14 +140,11 @@ static void handle_access_log(void)
 static void handle_room_status(void)
 {
     char line[64];
-    int occupancy;
-
-    for (int room = 1; room <= 2; room++) {
-        if (mqtt_get_room_occupancy(room, &occupancy)) {
-            snprintf(line, sizeof(line), "Room %d occupancy: %d person(s)", room, occupancy);
-        } else {
-            snprintf(line, sizeof(line), "Room %d occupancy: unavailable (awaiting MQTT update)", room);
-        }
+    for (int r = 1; r <= 2; r++) {
+        snprintf(line, sizeof(line), "Room %d: occupancy=%d  light=%s",
+                 r,
+                 mqtt_get_room_occupancy(r),
+                 mqtt_get_room_light(r) ? "ON" : "OFF");
         u_println(line);
     }
 }
