@@ -93,15 +93,58 @@ static void mqtt_event_handler(
             ESP_LOGW(TAG, "Disconnected from MQTT broker");
             break;
 
+        // case MQTT_EVENT_DATA: {
+        //     ESP_LOGI(
+        //         TAG,
+        //         "Received from %.*s: %.*s",
+        //         event->topic_len,
+        //         event->topic,
+        //         event->data_len,
+        //         event->data
+        //     );
+        //     break;
+        // }
         case MQTT_EVENT_DATA: {
-            ESP_LOGI(
-                TAG,
-                "Received from %.*s: %.*s",
-                event->topic_len,
-                event->topic,
-                event->data_len,
-                event->data
-            );
+            // Allocate a null-terminated buffer for the payload
+            char *payload = malloc(event->data_len + 1);
+            if (payload != NULL) {
+                memcpy(payload, event->data, event->data_len);
+                payload[event->data_len] = '\0';
+
+                // 1. Extract room name (e.g., "Room 2")
+                char room_name[32] = "Unknown Room";
+                char *room_ptr = strstr(payload, "\"room\":\"");
+                if (room_ptr) {
+                    room_ptr += 8; // Move past '"room":"'
+                    char *end_ptr = strchr(room_ptr, '"');
+                    if (end_ptr) {
+                        int len = end_ptr - room_ptr;
+                        if (len < sizeof(room_name)) {
+                            memcpy(room_name, room_ptr, len);
+                            room_name[len] = '\0';
+                        }
+                    }
+                }
+
+                // 2. Extract occupancy value
+                int occupancy = 0;
+                char *occ_ptr = strstr(payload, "\"occupancy\":");
+                if (occ_ptr) {
+                    occupancy = atoi(occ_ptr + 12); // Move past '"occupancy":' and convert
+                }
+
+                // 3. Check light status (true/false)
+                bool light_on = (strstr(payload, "\"light\":true") != NULL);
+                const char *light_status = light_on ? "ON" : "OFF";
+
+                // Print in your desired format
+                ESP_LOGI(TAG, "%s - Room occupancy: %d Lights: %s",
+                         room_name,
+                         occupancy,
+                         light_status);
+
+                free(payload);
+            }
             break;
         }
         case MQTT_EVENT_ERROR: {

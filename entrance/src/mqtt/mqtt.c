@@ -255,12 +255,30 @@ static void mqtt_event_handler(
                 room1_occupancy_available = true;
                 portEXIT_CRITICAL(&room_occupancy_mux);
                 room1_light_on = light_on;
+                char details[64];
+                snprintf(
+                    details,
+                    sizeof(details),
+                    "Room 1 occupancy=%d light=%s",
+                    occupancy,
+                    light_on ? "ON" : "OFF"
+                );
+                log_event("ROOM1_STATUS", details);
             } else {
                 portENTER_CRITICAL(&room_occupancy_mux);
                 room2_occupancy = occupancy;
                 room2_occupancy_available = true;
                 portEXIT_CRITICAL(&room_occupancy_mux);
                 room2_light_on = light_on;
+                char details[64];
+                snprintf(
+                    details,
+                    sizeof(details),
+                    "Room 2 occupancy=%d light=%s",
+                    occupancy,
+                    light_on ? "ON" : "OFF"
+                );
+                log_event("ROOM2_STATUS", details);
             }
             break;
         }

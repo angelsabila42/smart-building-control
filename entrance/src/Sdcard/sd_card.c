@@ -127,9 +127,6 @@ esp_err_t log_event(const char *event, const char *details)
         result = ESP_FAIL;
     }
 
-    if (result == ESP_OK) {
-        ESP_LOGI(TAG, "Event logged: %s", event);
-    }
     xSemaphoreGive(sd_mutex);
     return result;
 }
