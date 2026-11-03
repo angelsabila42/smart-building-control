@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <inttypes.h>
+#include <time.h>
 
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
@@ -12,6 +13,7 @@
 #include "Serv/serv.h"
 #include "Sdcard/sd_card.h"
 #include "Accesscontrol/access_control.h"
+#include "Schedule/schedule.h"
 #include "mqtt.h"
 
 //SPI communication pins
@@ -80,7 +82,19 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
 
             switch (reader_id)
             {
-            case RFID_ENTRY:
+            case RFID_ENTRY: {
+                time_t now = time(NULL);
+                struct tm *t = localtime(&now);
+                int day  = (t->tm_wday + 6) % 7;
+                int hour = t->tm_hour;
+                int min  = t->tm_min;
+                if (!schedule_is_open(day, hour, min)) {
+                    ESP_LOGW("ACCESS", "Entry denied — building closed");
+                    log_event("ENTRY_DENIED", "building closed");
+                    rgb_entry_denied();
+                    entry_close();
+                    break;
+                }
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Entry Access Granted");
                     log_event("ENTRY_GRANTED", uid_str);
@@ -99,6 +113,7 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                     entry_close();
             }
             break;
+            }
             
             case RFID_EXIT:
                 if (result == ACCESS_GRANTED){

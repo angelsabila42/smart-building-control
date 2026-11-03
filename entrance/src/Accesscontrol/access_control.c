@@ -79,6 +79,18 @@ bool user_add(uint32_t id, uint64_t rfid_uid)
     return true;
 }
 
+bool user_set_authorization(uint64_t rfid_uid, bool authorized)
+{
+    for (size_t i = 0; i < num_records; i++) {
+        if (users[i].rfid_uid == rfid_uid) {
+            users[i].authorized = authorized;
+            users_save();
+            return true;
+        }
+    }
+    return false;
+}
+
 bool user_remove(uint64_t rfid_uid)
 {
     for (size_t i = 0; i < num_records; i++) {
