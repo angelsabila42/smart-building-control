@@ -18,11 +18,13 @@
 #define SERVO_MAX_PULSE_WIDTH 1500
 
 #define FREQ_HZ 50
+#define SERVO_DUTY_RESOLUTION LEDC_TIMER_14_BIT
 
 static const char *TAG = "SERVO";
 
 TimerHandle_t entry_timer_handle = NULL;
 TimerHandle_t exit_timer_handle = NULL;
+static volatile bool emergency_release_active = false;
 
 static void configure_servo_timer(void)
 {
@@ -30,7 +32,7 @@ static void configure_servo_timer(void)
     ledc_timer_config_t ledc_timer = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .timer_num = LEDC_TIMER_1,
-        .duty_resolution = LEDC_TIMER_10_BIT,
+        .duty_resolution = SERVO_DUTY_RESOLUTION,
         .freq_hz = FREQ_HZ,
         // .clk_cfg =  LEDC_USE_XTAL_CLK
         .clk_cfg = LEDC_USE_APB_CLK
@@ -56,7 +58,11 @@ static void configure_servo_channel(gpio_num_t servo_pin,
         .hpoint = 0
     };
 
-    ledc_channel_config(&servo_channel);
+    esp_err_t err = ledc_channel_config(&servo_channel);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Servo channel %d configuration failed: %s",
+                 channel_num, esp_err_to_name(err));
+    }
 }
 
 static void servo_set_position(ledc_channel_t channel, uint32_t pulse_width_us)
@@ -68,47 +74,74 @@ static void servo_set_position(ledc_channel_t channel, uint32_t pulse_width_us)
 
     //Convert pulse width into duty value.
     uint32_t period = 1000000 / FREQ_HZ ;
-    uint32_t levels = 1U << 10; 
+    uint32_t levels = 1U << SERVO_DUTY_RESOLUTION;
     //ESP-IDF's ledc_set_duty() expects the duty argument as uint32_t
     uint32_t duty_value = (pulse_width_us * levels + period / 2) / period;
     
     //Set and update the LEDC duty.
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, channel, duty_value);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, channel);
+    esp_err_t err = ledc_set_duty(LEDC_LOW_SPEED_MODE, channel, duty_value);
+    if(err != ESP_OK){
+        ESP_LOGE(TAG, "Failed to set servo channel %d duty: %s", channel, esp_err_to_name(err));
+        return;
+    }
+
+    err = ledc_update_duty(LEDC_LOW_SPEED_MODE, channel);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to update servo channel %d duty: %s",
+                 channel, esp_err_to_name(err));
+    }
 }
 
 void entry_open(void)
 {
     servo_set_position(LEDC_CHANNEL_6, SERVO_MAX_PULSE_WIDTH);
-    //Starts inactive timer, If the timer is already active, xTimerReset() restarts its countdown.
-    BaseType_t res = xTimerReset(entry_timer_handle, 0);
-    if(res != pdPASS){
-        ESP_LOGE(TAG, "Failed to queue exit timer reset command");
+    if (!emergency_release_active) {
+        //Starts inactive timer, If the timer is already active, xTimerReset() restarts its countdown.
+        BaseType_t res = xTimerReset(entry_timer_handle, 0);
+        if(res != pdPASS){
+            ESP_LOGE(TAG, "Failed to queue exit timer reset command");
+        }
     }
 }
 
 void entry_close(void)
 {
+    if (emergency_release_active) {
+        return;
+    }
     servo_set_position(LEDC_CHANNEL_6, SERVO_MIN_PULSE_WIDTH);
 }
 
 void exit_open(void)
 {
     servo_set_position(LEDC_CHANNEL_7, SERVO_MAX_PULSE_WIDTH);
-    //Starts inactive timer, If the timer is already active, xTimerReset() restarts its countdown.
-    BaseType_t res = xTimerReset(exit_timer_handle, 0);
-    if(res != pdPASS){
-        ESP_LOGE(TAG, "Failed to queue exit timer reset command");
+    if (!emergency_release_active) {
+        //Starts inactive timer, If the timer is already active, xTimerReset() restarts its countdown.
+        BaseType_t res = xTimerReset(exit_timer_handle, 0);
+        if(res != pdPASS){
+            ESP_LOGE(TAG, "Failed to queue exit timer reset command");
+        }
     }
 }
 
 void exit_close(void)
 {
+    if (emergency_release_active) {
+        return;
+    }
     servo_set_position(LEDC_CHANNEL_7, SERVO_MIN_PULSE_WIDTH);
+}
+
+void serv_set_emergency_release(bool active)
+{
+    emergency_release_active = active;
 }
 
 //Entry Barrier Timer
 static void entry_barrier_timer_callback(TimerHandle_t timer){
+    if (emergency_release_active) {
+        return;
+    }
     entry_close();
     entry_rgb_off();
 }
@@ -131,6 +164,9 @@ static void configure_entry_barrier_timer()
 
 //Exit Barrier Timer
 static void exit_barrier_timer_callback(TimerHandle_t timer){
+    if (emergency_release_active) {
+        return;
+    }
     exit_close();
     exit_rgb_off();
 }

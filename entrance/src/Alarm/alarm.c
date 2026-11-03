@@ -3,6 +3,7 @@
 #include "Sdcard/sd_card.h"
 
 #include "driver/gpio.h"
+#include "Rgb/rgb.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -54,11 +55,19 @@ void alarm_set(bool active)
     alarm_active = active;
     if (active) {
         ESP_LOGW(TAG, "Alarm ACTIVATED — all doors opening");
+        // Activate emergency release for all doors
+        serv_set_emergency_release(true);
         entry_open();
         exit_open();
+
+        rgb_entry_denied();
+        rgb_exit_denied();
+        
         log_event("ALARM", "ACTIVATED");
     } else {
         ESP_LOGI(TAG, "Alarm CLEARED — normal access resumed");
+        // Deactivate emergency release for all doors
+        serv_set_emergency_release(false);
         entry_close();
         exit_close();
 
@@ -71,7 +80,7 @@ void alarm_set(bool active)
 
 void alarm_init(void)
 {
-    xTaskCreate(alarm_task, "alarm_task", 2048, NULL, 5, &alarm_task_handle);
+    xTaskCreate(alarm_task, "alarm_task", 4096, NULL, 5, &alarm_task_handle);
 
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << ALARM_GPIO),
