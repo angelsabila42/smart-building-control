@@ -85,7 +85,6 @@ static void mqtt_event_handler(
             mqtt_connected = true;
             ESP_LOGI(TAG, "Connected to MQTT broker");
             subscribe_to_topic(MQTT_PEER_TOPIC);
-            subscribe_to_topic(MQTT_BUILDING_TOPIC);
             publish_current_room_status();
             break;
 

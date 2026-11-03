@@ -11,8 +11,11 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "mqtt_client.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 
 #define MQTT_URI "mqtt://broker.hivemq.com:1883"
+#define MQTT_CONNECTED_BIT BIT0
 #define MQTT_TOPIC1 "cocis/room1/status"
 #define MQTT_TOPIC2 "cocis/room2/status"
 #define MQTT_TOPIC2_TELEMETRY "cocis/rooms/occupancy"
@@ -21,10 +24,36 @@
 
 static const char *TAG = "ENTRANCE";
 static esp_mqtt_client_handle_t mqtt_client = NULL;
+static EventGroupHandle_t mqtt_event_group = NULL;
 static int room1_occupancy = 0;
 static int room2_occupancy = 0;
+static bool room1_occupancy_available = false;
+static bool room2_occupancy_available = false;
 static bool room1_light_on = false;
 static bool room2_light_on = false;
+static portMUX_TYPE room_occupancy_mux = portMUX_INITIALIZER_UNLOCKED;
+
+bool mqtt_get_room_occupancy(int room_number, int *occupancy)
+{
+    if (occupancy == NULL || (room_number != 1 && room_number != 2)) {
+        return false;
+    }
+
+    bool available = false;
+    portENTER_CRITICAL(&room_occupancy_mux);
+    switch (room_number) {
+        case 1:
+            available = room1_occupancy_available;
+            *occupancy = room1_occupancy;
+            break;
+        case 2:
+            available = room2_occupancy_available;
+            *occupancy = room2_occupancy;
+            break;
+    }
+    portEXIT_CRITICAL(&room_occupancy_mux);
+    return available;
+}
 
 void mqtt_publish_building_occupancy(int occupancy)
 {
@@ -183,6 +212,7 @@ static void mqtt_event_handler(
 
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
+            xEventGroupSetBits(mqtt_event_group, MQTT_CONNECTED_BIT);
             ESP_LOGI(TAG, "Connected to MQTT broker");
             mqtt_publish_building_occupancy(occupancy_get_current());
             esp_mqtt_client_subscribe(event->client, MQTT_TOPIC2, 1);
@@ -220,7 +250,10 @@ static void mqtt_event_handler(
             }
 
             if (room_number == 1) {
+                portENTER_CRITICAL(&room_occupancy_mux);
                 room1_occupancy = occupancy;
+                room1_occupancy_available = true;
+                portEXIT_CRITICAL(&room_occupancy_mux);
                 room1_light_on = light_on;
 
                 ESP_LOGI(
@@ -240,7 +273,10 @@ static void mqtt_event_handler(
                 );
                 log_event("ROOM1_STATUS", details);
             } else {
+                portENTER_CRITICAL(&room_occupancy_mux);
                 room2_occupancy = occupancy;
+                room2_occupancy_available = true;
+                portEXIT_CRITICAL(&room_occupancy_mux);
                 room2_light_on = light_on;
 
                 ESP_LOGI(
@@ -264,6 +300,7 @@ static void mqtt_event_handler(
         }
 
         case MQTT_EVENT_DISCONNECTED:
+            xEventGroupClearBits(mqtt_event_group, MQTT_CONNECTED_BIT);
             ESP_LOGW(TAG, "Disconnected from MQTT broker");
             break;
 
@@ -293,10 +330,34 @@ static void mqtt_event_handler(
     }
 }
 
+bool mqtt_wait_for_connection(TickType_t timeout_ticks)
+{
+    if (mqtt_event_group == NULL) {
+        return false;
+    }
+
+    EventBits_t bits = xEventGroupWaitBits(
+        mqtt_event_group,
+        MQTT_CONNECTED_BIT,
+        pdFALSE,
+        pdTRUE,
+        timeout_ticks
+    );
+    return (bits & MQTT_CONNECTED_BIT) != 0;
+}
+
 void mqtt_start(void)
 {
     if (mqtt_client != NULL) {
         return;
+    }
+
+    if (mqtt_event_group == NULL) {
+        mqtt_event_group = xEventGroupCreate();
+        if (mqtt_event_group == NULL) {
+            ESP_LOGE(TAG, "Failed to create MQTT connection event group");
+            return;
+        }
     }
 
     esp_mqtt_client_config_t mqtt_config = {
@@ -305,11 +366,28 @@ void mqtt_start(void)
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_config);
-    esp_mqtt_client_register_event(
+    if (mqtt_client == NULL) {
+        ESP_LOGE(TAG, "Failed to initialize MQTT client");
+        return;
+    }
+
+    esp_err_t err = esp_mqtt_client_register_event(
         mqtt_client,
         ESP_EVENT_ANY_ID,
         mqtt_event_handler,
         NULL
     );
-    esp_mqtt_client_start(mqtt_client);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to register MQTT event handler: %s", esp_err_to_name(err));
+        esp_mqtt_client_destroy(mqtt_client);
+        mqtt_client = NULL;
+        return;
+    }
+
+    err = esp_mqtt_client_start(mqtt_client);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start MQTT client: %s", esp_err_to_name(err));
+        esp_mqtt_client_destroy(mqtt_client);
+        mqtt_client = NULL;
+    }
 }

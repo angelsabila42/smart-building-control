@@ -31,7 +31,6 @@ extern int64_t first_time;
 #define MQTT_URI "mqtt://broker.hivemq.com:1883"
 #define MQTT_TOPIC "cocis/room1/status"
 #define MQTT_PEER_TOPIC "cocis/room2/status"
-#define MQTT_BUILDING_TOPIC "cocis/building/occupancy"
 
 static const char *TAG = "ROOM1";
 

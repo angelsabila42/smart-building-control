@@ -4,6 +4,8 @@
 #include "Accesscontrol/access_control.h"
 #include "Sdcard/sd_card.h"
 #include "Alarm/alarm.h"
+#include "mqtt/mqtt.h"
+#include "wifi/wifi.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -138,9 +140,17 @@ static void handle_access_log(void)
 
 static void handle_room_status(void)
 {
-    /* Placeholder — room data comes from lecture-room ESP32s via MQTT */
-    u_println("Room 1: status unavailable (awaiting MQTT update)");
-    u_println("Room 2: status unavailable (awaiting MQTT update)");
+    char line[64];
+    int occupancy;
+
+    for (int room = 1; room <= 2; room++) {
+        if (mqtt_get_room_occupancy(room, &occupancy)) {
+            snprintf(line, sizeof(line), "Room %d occupancy: %d person(s)", room, occupancy);
+        } else {
+            snprintf(line, sizeof(line), "Room %d occupancy: unavailable (awaiting MQTT update)", room);
+        }
+        u_println(line);
+    }
 }
 
 static void handle_time_schedule(void)
@@ -328,6 +338,18 @@ static void handle_admin_entry(void)
 static void serial_menu_task(void *arg)
 {
     char buf[8];
+
+    u_println("Wi-Fi: connecting...");
+    while (!wifi_wait_for_connection(pdMS_TO_TICKS(1000))) {
+    }
+    u_println("Wi-Fi: connected.");
+
+    u_println("MQTT: connecting to broker...");
+    while (!mqtt_wait_for_connection(pdMS_TO_TICKS(1000))) {
+    }
+    uart_flush_input(MENU_UART);
+    u_println("MQTT: connected to broker.");
+
     show_main_menu();
     while (1) {
         u_readline(buf, sizeof(buf));

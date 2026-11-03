@@ -1,6 +1,7 @@
-#include "alarm.h"
+#include "Alarm/alarm.h"
 #include "Serv/serv.h"
 #include "Sdcard/sd_card.h"
+#include "Rgb/rgb.h"
 
 #include "driver/gpio.h"
 #include "esp_log.h"

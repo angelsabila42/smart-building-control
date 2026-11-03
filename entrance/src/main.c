@@ -22,6 +22,7 @@ static const char *TAG = "MAIN";
 void app_main(void)
 {
     wifi_init();
+    serial_menu_init();
     rgb_init();
     serv_init();
     schedule_init();
@@ -41,5 +42,4 @@ void app_main(void)
         ESP_LOGW(TAG, "SD card initialization failed: %s", esp_err_to_name(sd_result));
     }
 
-    serial_menu_init();
 }
