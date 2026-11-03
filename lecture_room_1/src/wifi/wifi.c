@@ -1,7 +1,6 @@
 #include "app_state.h"
 #include "wifi.h"
 #include "mqtt.h"
-#define MAX_RETRIES 3
 int retry_count = 0;
 
 static void wifi_event_handler(
@@ -18,22 +17,9 @@ static void wifi_event_handler(
     } else if (event_base == WIFI_EVENT &&
              event_id == WIFI_EVENT_STA_DISCONNECTED) {
         ESP_LOGW(TAG, "Disconnected");
-        if (retry_count < MAX_RETRIES) {
-            retry_count++;
-            ESP_LOGI(
-                TAG,
-                "Reconnect attempt %d of %d",
-                retry_count,
-                MAX_RETRIES
-            );
-            esp_wifi_connect();
-        }
-        else {
-            ESP_LOGE(
-                TAG,
-                "Maximum retries reached, try again later"
-            );
-        }
+        retry_count++;
+        ESP_LOGI(TAG, "Wi-Fi reconnect attempt %d", retry_count);
+        esp_wifi_connect();
     } else if (event_base == IP_EVENT &&
                event_id == IP_EVENT_STA_GOT_IP) {
 

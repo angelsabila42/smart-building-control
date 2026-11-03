@@ -28,7 +28,7 @@ static void publish_room_status(int count, bool light_on)
         message,
         0,
         1,
-        0
+        1
     );
 
     if (message_id < 0) {
@@ -40,21 +40,12 @@ static void publish_room_status(int count, bool light_on)
     ESP_LOGI(TAG, "Message: %s", message);
 }
 
+void publish_current_room_status(void)
+{
+    publish_room_status(occupancy, occupancy > 0);
+}
+
 void control(){
-        int building_occupancy = building_get_occupancy();
-        if (occupancy > building_occupancy) {
-            occupancy = building_occupancy;
-            gpio_set_level(LIGHT, occupancy > 0);
-            publish_room_status(occupancy, occupancy > 0);
-        }
-
-        if (building_occupancy <= 0) {
-            first_sensor = 0;
-            gpio_set_level(LIGHT, 0);
-            vTaskDelay(pdMS_TO_TICKS(50));
-            return;
-        }
-
         int pir1 = gpio_get_level(PIR1);
         int pir2 = gpio_get_level(PIR2);
         int64_t now = esp_timer_get_time();
@@ -78,11 +69,9 @@ void control(){
 
         // PIR 1 followed by PIR 2: entering
         else if (pir1 && pir2 && first_sensor == 1) {
-            if (occupancy < building_get_occupancy()) {
-                occupancy++;
-                gpio_set_level(LIGHT, occupancy > 0);
-                publish_room_status(occupancy, occupancy > 0);
-            }
+            occupancy++;
+            gpio_set_level(LIGHT, occupancy > 0);
+            publish_room_status(occupancy, occupancy > 0);
             first_sensor = 0;
 
             printf("Entry detected. Occupancy: %d\n", occupancy);
@@ -90,7 +79,7 @@ void control(){
 
 
         else if (pir1 && pir2 && first_sensor == 2) {
-            if (building_get_occupancy() > 0 && occupancy > 0) {
+            if (occupancy > 0) {
                 occupancy--;
 
                 gpio_set_level(LIGHT, occupancy > 0);

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-static void publish_room_status(int count, bool light_on);
+void publish_current_room_status(void);
 void control();
 
 #endif

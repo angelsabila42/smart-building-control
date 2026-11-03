@@ -1,18 +1,17 @@
 #include "app_state.h"
 #include "mqtt.h"
-
-#include <limits.h>
-#include <stdatomic.h>
-#include <stdlib.h>
-#include <string.h>
+#include "controller.h"
 
 esp_mqtt_client_handle_t mqtt_client = NULL;
 bool mqtt_connected = false;
-static atomic_int building_occupancy = ATOMIC_VAR_INIT(0);
+static char mqtt_client_id[32];
 
-int building_get_occupancy(void)
+static void subscribe_to_topic(const char *topic)
 {
-    return atomic_load(&building_occupancy);
+    int message_id = esp_mqtt_client_subscribe(mqtt_client, topic, 1);
+    if (message_id < 0) {
+        ESP_LOGE(TAG, "Failed to subscribe to %s", topic);
+    }
 }
 
 static void mqtt_event_handler(
@@ -21,62 +20,49 @@ static void mqtt_event_handler(
     int32_t event_id,
     void *event_data)
 {
+    esp_mqtt_event_handle_t event = event_data;
+
     switch (event_id) {
         case MQTT_EVENT_CONNECTED:
             mqtt_connected = true;
             ESP_LOGI(TAG, "Connected to MQTT broker");
-            ESP_ERROR_CHECK(esp_mqtt_client_subscribe(
-                mqtt_client,
-                MQTT_BUILDING_OCCUPANCY_TOPIC,
-                1
-            ));
+            subscribe_to_topic(MQTT_PEER_TOPIC);
+            subscribe_to_topic(MQTT_BUILDING_TOPIC);
+            publish_current_room_status();
             break;
-
-        case MQTT_EVENT_DATA: {
-            if (event_data == NULL) {
-                break;
-            }
-
-            esp_mqtt_event_handle_t event = event_data;
-            if (event->topic_len != strlen(MQTT_BUILDING_OCCUPANCY_TOPIC) ||
-                memcmp(
-                    event->topic,
-                    MQTT_BUILDING_OCCUPANCY_TOPIC,
-                    event->topic_len
-                ) != 0 ||
-                event->data_len <= 0 ||
-                event->data_len >= 12) {
-                break;
-            }
-
-            char payload[12];
-            memcpy(payload, event->data, event->data_len);
-            payload[event->data_len] = '\0';
-
-            char *end;
-            long occupancy = strtol(payload, &end, 10);
-            if (end == payload ||
-                *end != '\0' ||
-                occupancy < 0 ||
-                occupancy > INT_MAX) {
-                ESP_LOGW(TAG, "Invalid building occupancy: %s", payload);
-                break;
-            }
-
-            atomic_store(&building_occupancy, (int)occupancy);
-            ESP_LOGI(TAG, "Building occupancy=%ld", occupancy);
-            break;
-        }
 
         case MQTT_EVENT_DISCONNECTED:
             mqtt_connected = false;
-            atomic_store(&building_occupancy, 0);
             ESP_LOGW(TAG, "Disconnected from MQTT broker");
             break;
 
-        case MQTT_EVENT_ERROR:
-            ESP_LOGE(TAG, "MQTT connection error");
+        case MQTT_EVENT_DATA: {
+            ESP_LOGI(
+                TAG,
+                "Received from %.*s: %.*s",
+                event->topic_len,
+                event->topic,
+                event->data_len,
+                event->data
+            );
             break;
+        }
+        case MQTT_EVENT_ERROR: {
+            if (event != NULL && event->error_handle != NULL) {
+                esp_mqtt_error_codes_t *error = event->error_handle;
+                ESP_LOGE(
+                    TAG,
+                    "MQTT error (type=%d, esp_err=%s, socket_errno=%d, broker_code=%d)",
+                    error->error_type,
+                    esp_err_to_name(error->esp_tls_last_esp_err),
+                    error->esp_transport_sock_errno,
+                    error->connect_return_code
+                );
+            } else {
+                ESP_LOGE(TAG, "MQTT connection error (no error details)");
+            }
+            break;
+        }
 
         default:
             break;
@@ -86,21 +72,56 @@ static void mqtt_event_handler(
 
 void start_mqtt(void)
 {
+    uint8_t mac[6];
+    esp_err_t err = esp_wifi_get_mac(WIFI_IF_STA, mac);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read station MAC address: %s", esp_err_to_name(err));
+        return;
+    }
+
+    snprintf(
+        mqtt_client_id,
+        sizeof(mqtt_client_id),
+        "room2_%02x%02x%02x%02x%02x%02x",
+        (unsigned int)mac[0],
+        (unsigned int)mac[1],
+        (unsigned int)mac[2],
+        (unsigned int)mac[3],
+        (unsigned int)mac[4],
+        (unsigned int)mac[5]
+    );
+
     esp_mqtt_client_config_t mqtt_config = {
         .broker.address.uri = MQTT_URI,
-        .credentials.client_id = "room2_controller"
+        .credentials.client_id = mqtt_client_id
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_config);
+    if (mqtt_client == NULL) {
+        ESP_LOGE(TAG, "Failed to initialize MQTT client for %s", MQTT_URI);
+        return;
+    }
 
-    ESP_ERROR_CHECK(
-        esp_mqtt_client_register_event(
-            mqtt_client,
-            ESP_EVENT_ANY_ID,
-            mqtt_event_handler,
-            NULL
-        )
+    err = esp_mqtt_client_register_event(
+        mqtt_client,
+        ESP_EVENT_ANY_ID,
+        mqtt_event_handler,
+        NULL
     );
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to register MQTT event handler: %s", esp_err_to_name(err));
+        esp_mqtt_client_destroy(mqtt_client);
+        mqtt_client = NULL;
+        return;
+    }
 
-    ESP_ERROR_CHECK(esp_mqtt_client_start(mqtt_client));
+    err = esp_mqtt_client_start(mqtt_client);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start MQTT client: %s", esp_err_to_name(err));
+        esp_mqtt_client_destroy(mqtt_client);
+        mqtt_client = NULL;
+        return;
+    }
+
+    ESP_LOGI(TAG, "Starting MQTT client %s for %s", mqtt_client_id, MQTT_URI);
 }

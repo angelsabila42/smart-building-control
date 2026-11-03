@@ -2,7 +2,6 @@
 #include "wifi.h"
 #include "mqtt.h"
 
-#define MAX_RETRIES 3
 int retry_count = 0;
 static void wifi_event_handler(
     void *arg,
@@ -13,30 +12,31 @@ static void wifi_event_handler(
     if (event_base == WIFI_EVENT &&
         event_id == WIFI_EVENT_STA_START) {
 
-        esp_wifi_connect();
+        esp_err_t err = esp_wifi_connect();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to start Wi-Fi connection: %s", esp_err_to_name(err));
+        }
 
     } else if (event_base == WIFI_EVENT &&
              event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGW(TAG, "Disconnected");
-        if (retry_count < MAX_RETRIES) {
-            retry_count++;
-            ESP_LOGI(
-                TAG,
-                "Reconnect attempt %d of %d",
-                retry_count,
-                MAX_RETRIES
-            );
-            esp_wifi_connect();
+        wifi_event_sta_disconnected_t *disconnected = event_data;
+        if (disconnected != NULL) {
+            ESP_LOGW(TAG, "Wi-Fi disconnected (reason: %d)", disconnected->reason);
         }
         else {
-            ESP_LOGE(
-                TAG,
-                "Maximum retries reached, try again later"
-            );
+            ESP_LOGW(TAG, "Wi-Fi disconnected");
+        }
+
+        retry_count++;
+        ESP_LOGI(TAG, "Wi-Fi reconnect attempt %d", retry_count);
+        esp_err_t err = esp_wifi_connect();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Wi-Fi reconnect failed: %s", esp_err_to_name(err));
         }
     } else if (event_base == IP_EVENT &&
                event_id == IP_EVENT_STA_GOT_IP) {
 
+        retry_count = 0;
         ESP_LOGI(TAG, "Wi-Fi connected; IP address obtained");
 
         if (mqtt_client == NULL) {
