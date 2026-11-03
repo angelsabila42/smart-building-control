@@ -24,6 +24,7 @@ int             occupancy_get_current(void);
 
 bool            user_add(uint32_t id, uint64_t rfid_uid);
 bool            user_remove(uint64_t rfid_uid);
+bool            user_set_authorization(uint64_t rfid_uid, bool authorized);
 int             user_list(user_t *out_buf, int buf_len);
 void            users_save(void);
 void            users_load(void);
