@@ -1,5 +1,0 @@
--mlongcalls
--fno-builtin-memcpy
--fno-builtin-memset
--fno-builtin-bzero
-"-specs=C:/Users/N.PK/smart-building-control/lecture_room_2/build/specs/picolibc.specs"
