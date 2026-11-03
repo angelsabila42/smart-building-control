@@ -5,6 +5,7 @@
 
 #include "mqtt.h"
 #include "../Accesscontrol/access_control.h"
+#include "../Sdcard/sd_card.h"
 
 #include "esp_err.h"
 #include "esp_event.h"
@@ -254,46 +255,12 @@ static void mqtt_event_handler(
                 room1_occupancy_available = true;
                 portEXIT_CRITICAL(&room_occupancy_mux);
                 room1_light_on = light_on;
-
-                ESP_LOGI(
-                    TAG,
-                    "Room 1 occupancy=%d light=%s",
-                    room1_occupancy,
-                    room1_light_on ? "ON" : "OFF"
-                );
-
-                char details[100];
-                snprintf(
-                    details,
-                    sizeof(details),
-                    "Room 1 occupancy=%d light=%s",
-                    room1_occupancy,
-                    room1_light_on ? "ON" : "OFF"
-                );
-                log_event("ROOM1_STATUS", details);
             } else {
                 portENTER_CRITICAL(&room_occupancy_mux);
                 room2_occupancy = occupancy;
                 room2_occupancy_available = true;
                 portEXIT_CRITICAL(&room_occupancy_mux);
                 room2_light_on = light_on;
-
-                ESP_LOGI(
-                    TAG,
-                    "Room 2 occupancy=%d light=%s",
-                    room2_occupancy,
-                    room2_light_on ? "ON" : "OFF"
-                );
-
-                char details[100];
-                snprintf(
-                    details,
-                    sizeof(details),
-                    "Room 2 occupancy=%d light=%s",
-                    room2_occupancy,
-                    room2_light_on ? "ON" : "OFF"
-                );
-                log_event("ROOM2_STATUS", details);
             }
             break;
         }
@@ -327,11 +294,6 @@ static void mqtt_event_handler(
         default:
             break;
     }
-}
-
-int mqtt_get_room_occupancy(int room)
-{
-    return room == 1 ? room1_occupancy : room2_occupancy;
 }
 
 bool mqtt_get_room_light(int room)
@@ -383,4 +345,20 @@ void mqtt_start(void)
         esp_mqtt_client_destroy(mqtt_client);
         mqtt_client = NULL;
     }
+}
+
+bool mqtt_wait_for_connection(TickType_t timeout_ticks)
+{
+    if (mqtt_event_group == NULL) {
+        return false;
+    }
+
+    EventBits_t bits = xEventGroupWaitBits(
+        mqtt_event_group,
+        MQTT_CONNECTED_BIT,
+        pdFALSE,
+        pdTRUE,
+        timeout_ticks
+    );
+    return (bits & MQTT_CONNECTED_BIT) != 0;
 }

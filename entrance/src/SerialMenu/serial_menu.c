@@ -5,6 +5,7 @@
 #include "../Sdcard/sd_card.h"
 #include "../Alarm/alarm.h"
 #include "../mqtt/mqtt.h"
+#include "../wifi/wifi.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -141,9 +142,17 @@ static void handle_room_status(void)
 {
     char line[64];
     for (int r = 1; r <= 2; r++) {
-        snprintf(line, sizeof(line), "Room %d: occupancy=%d  light=%s",
+        int occupancy;
+        char occupancy_text[16];
+        if (mqtt_get_room_occupancy(r, &occupancy)) {
+            snprintf(occupancy_text, sizeof(occupancy_text), "%d", occupancy);
+        } else {
+            snprintf(occupancy_text, sizeof(occupancy_text), "unavailable");
+        }
+
+        snprintf(line, sizeof(line), "Room %d: occupancy=%s  light=%s",
                  r,
-                 mqtt_get_room_occupancy(r),
+                 occupancy_text,
                  mqtt_get_room_light(r) ? "ON" : "OFF");
         u_println(line);
     }
