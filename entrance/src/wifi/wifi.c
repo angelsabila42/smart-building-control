@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
+#include "esp_sntp.h"
 #include "nvs_flash.h"
 #include "freertos/event_groups.h"
 
@@ -34,6 +35,9 @@ static void wifi_event_handler(
                event_id == IP_EVENT_STA_GOT_IP) {
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
         ESP_LOGI(TAG, "Wi-Fi connected; IP address obtained");
+        esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+        esp_sntp_setservername(0, "pool.ntp.org");
+        esp_sntp_init();
         mqtt_start();
     }
 }

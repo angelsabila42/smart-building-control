@@ -115,6 +115,7 @@ static void show_admin_menu(void)
     box_item("[4] List authorized users");
     box_item("[5] Flush SD logs now");
     box_item("[6] Alarm status");
+    box_item("[7] Set user authorization");
     box_item("[0] Back to main menu");
     box_bottom();
     u_print("Choice: ");
@@ -166,7 +167,8 @@ static void handle_time_schedule(void)
         if (s.closed) {
             snprintf(line, sizeof(line), "%-4s  CLOSED", days[d]);
         } else {
-            snprintf(line, sizeof(line), "%-4s  %02d:00  %02d:00", days[d], s.open_hour, s.close_hour);
+            snprintf(line, sizeof(line), "%-4s  %02d:%02d  %02d:%02d",
+                     days[d], s.open_hour, s.open_min, s.close_hour, s.close_min);
         }
         u_println(line);
     }
@@ -193,27 +195,36 @@ static void admin_set_schedule(void)
     u_print("Mark as closed? (y/n): ");
     u_readline(buf, sizeof(buf));
     if (buf[0] == 'y' || buf[0] == 'Y') {
-        if (schedule_set_day(day, 0, 0, true)) {
+        if (schedule_set_day(day, 0, 0, 0, 0, true)) {
             u_println("Day marked as closed.");
             log_event("SCHEDULE_SET", "day marked closed");
         }
         return;
     }
 
-    u_print("Open hour  (0-23): ");
+    u_print("Open hour   (0-23): ");
     u_readline(buf, sizeof(buf));
     int open_h = atoi(buf);
 
-    u_print("Close hour (0-23): ");
+    u_print("Open minute (0-59): ");
+    u_readline(buf, sizeof(buf));
+    int open_m = atoi(buf);
+
+    u_print("Close hour   (0-23): ");
     u_readline(buf, sizeof(buf));
     int close_h = atoi(buf);
 
-    if (schedule_set_day(day, open_h, close_h, false)) {
-        snprintf(line, sizeof(line), "Schedule updated: day=%d %02d:00-%02d:00", day, open_h, close_h);
+    u_print("Close minute (0-59): ");
+    u_readline(buf, sizeof(buf));
+    int close_m = atoi(buf);
+
+    if (schedule_set_day(day, open_h, open_m, close_h, close_m, false)) {
+        snprintf(line, sizeof(line), "Schedule updated: day=%d %02d:%02d-%02d:%02d",
+                 day, open_h, open_m, close_h, close_m);
         u_println(line);
         log_event("SCHEDULE_SET", line);
     } else {
-        u_println("Error: close must be > open, both 0-23.");
+        u_println("Error: close must be after open, values 0-23 / 0-59.");
     }
 }
 
@@ -277,6 +288,25 @@ static void admin_flush_logs(void)
     }
 }
 
+static void admin_set_authorization(void)
+{
+    char buf[32];
+    u_print("RFID UID: ");
+    u_readline(buf, sizeof(buf));
+    uint64_t uid = (uint64_t)strtoull(buf, NULL, 10);
+
+    u_print("Authorize? (y=grant / n=revoke): ");
+    u_readline(buf, sizeof(buf));
+    bool auth = (buf[0] == 'y' || buf[0] == 'Y');
+
+    if (user_set_authorization(uid, auth)) {
+        u_println(auth ? "User authorized." : "User authorization revoked.");
+        log_event(auth ? "USER_AUTHORIZED" : "USER_REVOKED", buf);
+    } else {
+        u_println("UID not found.");
+    }
+}
+
 static void admin_alarm_control(void)
 {
     bool current = alarm_is_active();
@@ -307,7 +337,8 @@ static void run_admin_menu(void)
             case '3': admin_remove_user();   break;
             case '4': admin_list_users();    break;
             case '5': admin_flush_logs();    break;
-            case '6': admin_alarm_control(); break;
+            case '6': admin_alarm_control();      break;
+            case '7': admin_set_authorization();   break;
             case '0': return;
             default:  u_println("Invalid choice."); break;
         }
