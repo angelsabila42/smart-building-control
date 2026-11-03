@@ -319,6 +319,23 @@ bool mqtt_get_room_light(int room)
     return room == 1 ? room1_light_on : room2_light_on;
 }
 
+//Missing yet implemented in Serial monitor
+bool mqtt_wait_for_connection(TickType_t timeout_ticks)
+{
+    if (mqtt_event_group == NULL) {
+        return false;
+    }
+
+    EventBits_t bits = xEventGroupWaitBits(
+        mqtt_event_group,
+        MQTT_CONNECTED_BIT,
+        pdFALSE,
+        pdTRUE,
+        timeout_ticks
+    );
+    return (bits & MQTT_CONNECTED_BIT) != 0;
+}
+
 void mqtt_start(void)
 {
     if (mqtt_client != NULL) {
