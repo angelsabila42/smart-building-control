@@ -71,6 +71,9 @@ void alarm_set(bool active)
         serv_set_emergency_release(false);
         entry_close();
         exit_close();
+
+        entry_rgb_off();
+        exit_rgb_off();
         log_event("ALARM", "CLEARED");
     }
 }

@@ -101,11 +101,11 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                     log_event("ENTRY_GRANTED", uid_str);
                     passage_set_pending_entry(tag->serial_number);
 
-                    if (occupancy_update(tag->serial_number, true)) {
-                        mqtt_publish_building_occupancy(
-                            occupancy_get_current()
-                        );
-                    }
+                    // if (occupancy_update(tag->serial_number, true)) {
+                    //     mqtt_publish_building_occupancy(
+                    //         occupancy_get_current()
+                    //     );
+                    // }
 
                     rgb_entry_granted();
                     entry_open();
@@ -124,11 +124,11 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                     log_event("EXIT_GRANTED", uid_str);
                     passage_set_pending_entry(tag->serial_number);
                     
-                    if (occupancy_update(tag->serial_number, false)) {
-                        mqtt_publish_building_occupancy(
-                            occupancy_get_current()
-                        );
-                    }
+                    // if (occupancy_update(tag->serial_number, false)) {
+                    //     mqtt_publish_building_occupancy(
+                    //         occupancy_get_current()
+                    //     );
+                    // }
 
                     rgb_exit_granted();
                     exit_open();

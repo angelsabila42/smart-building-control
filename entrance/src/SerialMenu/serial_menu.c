@@ -92,10 +92,11 @@ static void show_main_menu(void)
     box_divider();
     box_item("[1] Building occupancy");
     box_item("[2] Access log");
-    box_item("[3] Room status & lighting");
-    box_item("[4] Current time & schedule");
-    box_item("[5] SD card status");
-    box_item("[6] Admin menu  (PIN required)");
+    box_item("[3] Room log");
+    box_item("[4] Room status & lighting");
+    box_item("[5] Current time & schedule");
+    box_item("[6] SD card status");
+    box_item("[7] Admin menu  (PIN required)");
     box_item("[0] Refresh menu");
     box_bottom();
     u_print("Choice: ");
@@ -113,9 +114,10 @@ static void show_admin_menu(void)
     box_item("[2] Add authorized user");
     box_item("[3] Remove authorized user");
     box_item("[4] List authorized users");
-    box_item("[5] Flush SD logs now");
-    box_item("[6] Alarm status");
-    box_item("[7] Set user authorization");
+    box_item("[5] View admin log");
+    box_item("[6] Flush SD logs now");
+    box_item("[7] Alarm status");
+    box_item("[8] Set user authorization");
     box_item("[0] Back to main menu");
     box_bottom();
     u_print("Choice: ");
@@ -136,7 +138,25 @@ static void handle_access_log(void)
         u_println("SD card not mounted — cannot read log.");
         return;
     }
-    read_log(u_println);
+    read_log(ACCESS_LOG_FILE, u_println);
+}
+
+static void handle_room_log(void)
+{
+    if (!sd_card_is_mounted()) {
+        u_println("SD card not mounted — cannot read log.");
+        return;
+    }
+    read_log(ROOM_LOG_FILE, u_println);
+}
+
+static void handle_admin_log(void)
+{
+    if (!sd_card_is_mounted()) {
+        u_println("SD card not mounted — cannot read log.");
+        return;
+    }
+    read_log(ADMIN_LOG_FILE, u_println);
 }
 
 static void handle_room_status(void)
@@ -341,9 +361,10 @@ static void run_admin_menu(void)
             case '2': admin_add_user();      break;
             case '3': admin_remove_user();   break;
             case '4': admin_list_users();    break;
-            case '5': admin_flush_logs();    break;
-            case '6': admin_alarm_control();      break;
-            case '7': admin_set_authorization();   break;
+            case '5': handle_admin_log();    break;
+            case '6': admin_flush_logs();    break;
+            case '7': admin_alarm_control();      break;
+            case '8': admin_set_authorization();   break;
             case '0': return;
             default:  u_println("Invalid choice."); break;
         }
@@ -393,10 +414,11 @@ static void serial_menu_task(void *arg)
         switch (buf[0]) {
             case '1': handle_occupancy();    break;
             case '2': handle_access_log();   break;
-            case '3': handle_room_status();  break;
-            case '4': handle_time_schedule();break;
-            case '5': handle_sd_status();    break;
-            case '6': handle_admin_entry();  break;
+            case '3': handle_room_log();     break;
+            case '4': handle_room_status();  break;
+            case '5': handle_time_schedule();break;
+            case '6': handle_sd_status();    break;
+            case '7': handle_admin_entry();  break;
             case '0': break;
             default:  u_println("Invalid choice."); break;
         }

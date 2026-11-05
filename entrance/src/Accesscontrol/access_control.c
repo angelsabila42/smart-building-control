@@ -13,10 +13,10 @@
 static int occupancy;
 
 static user_t users[MAX_USERS] = {
-    {230000, 17247175169ULL,  true,  false},
+    {230000, 17247175169ULL,  true,  false}, //BLUE
+    {230002, 293201977873ULL, true,  false}, //GREEN
+    {230003, 878462854741ULL, true,  false}, //YELLOW
     {230001, 262913,          true,  false},
-    {230002, 293201977873ULL, true,  false},
-    {230003, 4469521,         true,  false},
     {230004, 52394,           false, false}
 };
 

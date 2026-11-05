@@ -137,8 +137,7 @@ static void mqtt_event_handler(
                 bool light_on = (strstr(payload, "\"light\":true") != NULL);
                 const char *light_status = light_on ? "ON" : "OFF";
 
-                // Print in your desired format
-                ESP_LOGI(TAG, "%s - Room occupancy: %d Lights: %s",
+                ESP_LOGI(TAG, "Peer status from %s: occupancy: %d Lights: %s",
                          room_name,
                          occupancy,
                          light_status);
