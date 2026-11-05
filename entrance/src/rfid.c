@@ -86,15 +86,17 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
             case RFID_ENTRY: {
                 time_t now = time(NULL);
                 struct tm *t = localtime(&now);
-                int day  = (t->tm_wday + 6) % 7;
-                int hour = t->tm_hour;
-                int min  = t->tm_min;
-                if (!schedule_is_open(day, hour, min)) {
-                    ESP_LOGW("ACCESS", "Entry denied — building closed");
-                    log_event("ENTRY_DENIED", "building closed");
-                    rgb_entry_denied();
-                    entry_close();
-                    break;
+                if (t->tm_year > 70) {
+                    int day  = (t->tm_wday + 6) % 7;
+                    int hour = t->tm_hour;
+                    int min  = t->tm_min;
+                    if (!schedule_is_open(day, hour, min)) {
+                        ESP_LOGW("ACCESS", "Entry denied — building closed");
+                        log_event("ENTRY_DENIED", "building closed");
+                        rgb_entry_denied();
+                        entry_close();
+                        break;
+                    }
                 }
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Entry Access Granted");
