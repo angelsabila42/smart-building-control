@@ -122,7 +122,7 @@ static void rfid_handler(void *arg, esp_event_base_t base, int32_t event_id, voi
                 if (result == ACCESS_GRANTED){
                     ESP_LOGI("ACCESS", "Exit Access Granted");
                     log_event("EXIT_GRANTED", uid_str);
-                    passage_set_pending_entry(tag->serial_number);
+                    passage_set_pending_exit(tag->serial_number);
                     
                     // if (occupancy_update(tag->serial_number, false)) {
                     //     mqtt_publish_building_occupancy(
